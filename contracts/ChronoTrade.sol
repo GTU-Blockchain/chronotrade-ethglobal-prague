@@ -2,10 +2,15 @@ pragma solidity ^0.8.19;
 
 // SPDX-License-Identifier: MIT
 
+import "./TIME.sol";
+
 contract ChronoTrade {
     // constants
     uint256 public constant TIMEOUT_DURATION = 10 days;
     uint256 public constant TOKEN_PER_HOUR = 1; // 1 token per hour
+
+    // token contract
+    TIME public timeToken;
 
     // enums
     enum DayOfWeek {
@@ -31,8 +36,6 @@ contract ChronoTrade {
         string description;
         bool isActive;
         uint8 durationHours; // Duration of the service in hours
-        DayOfWeek[] availableDays; // Which days the service is available
-        TimeSlot[] availableTimeSlots; // Available time slots for each day
     }
 
     struct UserProfile {
@@ -41,7 +44,10 @@ contract ChronoTrade {
         string description;
         uint256 ratingSum;
         uint256 ratingCount;
-        uint256 balance;
+        bool isRegistered;
+        mapping(DayOfWeek => bool) availableDays; // Which days the user is available
+        mapping(uint8 => TimeSlot) availableTimeSlots; // Available time slots by start hour
+        uint8[] timeSlotStartHours; // Array to keep track of which hours have slots
     }
 
     struct PurchasedService {
@@ -51,7 +57,7 @@ contract ChronoTrade {
         bool sellerWithdrawn;
         bool buyerWithdrawn;
         uint256 timestamp; // When the service was bought
-        uint256 scheduledTime; // When the service is scheduled for
+        uint256 scheduledTime; // Unix timestamp for the service
         bool isCancelled;
     }
 
@@ -76,6 +82,8 @@ contract ChronoTrade {
     event UserRated(address indexed ratedUser, uint8 rating);
     event ServiceApproved(uint256 indexed serviceId, address indexed buyer);
     event WithdrawSuccess(address indexed user, uint256 amount, string reason);
+    event UserRegistered(address indexed user);
+    event TimeSlotsUpdated(address indexed user);
 
     // mappings
     mapping(address => UserProfile) public profiles;
@@ -84,37 +92,28 @@ contract ChronoTrade {
     mapping(uint256 => PurchasedService) public purchases;
     mapping(address => uint256[]) public userServices;
     mapping(address => uint256[]) public userPurchases;
+    mapping(address => mapping(uint256 => bool)) public userBookedSlots; // user => timestamp => isBooked
 
     // state variables
     uint256 public nextServiceId;
 
     // constructor
-    constructor() {
-        // constructor
+    constructor(address _timeTokenAddress) {
+        timeToken = TIME(_timeTokenAddress);
     }
 
     // functions
     function createService(
         string memory _title,
         string memory _description,
-        uint8 _durationHours,
-        DayOfWeek[] memory _availableDays,
-        TimeSlot[] memory _availableTimeSlots
+        uint8 _durationHours
     ) external {
+        require(profiles[msg.sender].isRegistered, "User not registered");
         require(_durationHours > 0 && _durationHours <= 24, "Invalid duration");
-        require(_availableDays.length > 0, "No available days");
-        require(_availableTimeSlots.length > 0, "No available time slots");
-
-        // Validate time slots
-        for (uint i = 0; i < _availableTimeSlots.length; i++) {
-            TimeSlot memory slot = _availableTimeSlots[i];
-            require(slot.startHour < 24 && slot.endHour < 24, "Invalid hours");
-            require(slot.startHour < slot.endHour, "Invalid time slot");
-            require(
-                slot.endHour - slot.startHour >= _durationHours,
-                "Time slot too short for service duration"
-            );
-        }
+        require(
+            profiles[msg.sender].timeSlotStartHours.length > 0,
+            "No available time slots set"
+        );
 
         Service storage newService = services[nextServiceId];
         newService.id = nextServiceId;
@@ -124,40 +123,92 @@ contract ChronoTrade {
         newService.isActive = true;
         newService.durationHours = _durationHours;
 
-        // Copy available days
-        for (uint i = 0; i < _availableDays.length; i++) {
-            newService.availableDays.push(_availableDays[i]);
-        }
-
-        // Copy available time slots
-        for (uint i = 0; i < _availableTimeSlots.length; i++) {
-            newService.availableTimeSlots.push(_availableTimeSlots[i]);
-        }
-
         userServices[msg.sender].push(nextServiceId);
         emit ServiceCreated(nextServiceId, msg.sender, _durationHours);
         nextServiceId++;
     }
 
+    // Register new user and mint initial tokens
+    function registerUser(
+        string memory _name,
+        string memory _description
+    ) external {
+        require(!profiles[msg.sender].isRegistered, "User already registered");
+
+        UserProfile storage profile = profiles[msg.sender];
+        profile.user = msg.sender;
+        profile.name = _name;
+        profile.description = _description;
+        profile.ratingSum = 0;
+        profile.ratingCount = 0;
+        profile.isRegistered = true;
+
+        // Mint initial 24 TIME tokens for new user
+        timeToken.mintForNewUser(msg.sender);
+
+        emit UserRegistered(msg.sender);
+    }
+
+    // Helper function to get day of week from timestamp (0 = Monday, 6 = Sunday)
+    function getDayOfWeek(uint256 _timestamp) public pure returns (DayOfWeek) {
+        // Unix epoch started on Thursday, so we add 3 to make Monday = 0
+        return DayOfWeek(((_timestamp / 86400) + 3) % 7);
+    }
+
+    // Helper function to get hour from timestamp (0-23)
+    function getHour(uint256 _timestamp) public pure returns (uint8) {
+        return uint8((_timestamp / 3600) % 24);
+    }
+
     function buyService(uint256 _serviceId, uint256 _scheduledTime) external {
         Service memory service = services[_serviceId];
-        uint256 totalPrice = service.durationHours * TOKEN_PER_HOUR;
+        UserProfile storage sellerProfile = profiles[service.seller];
+        uint256 totalPrice = service.durationHours * TOKEN_PER_HOUR * 10 ** 18;
 
         require(service.isActive, "Service inactive");
+        require(msg.sender != service.seller, "Cannot buy your own service");
         require(
-            profiles[msg.sender].balance >= totalPrice,
-            "Not enough tokens"
+            timeToken.balanceOf(msg.sender) >= totalPrice,
+            "Not enough TIME tokens"
+        );
+        require(
+            _scheduledTime > block.timestamp,
+            "Scheduled time must be in future"
         );
 
-        // Use the helper function to validate the scheduled time
-        (bool isValid, string memory reason) = isScheduledTimeValid(
-            _serviceId,
-            _scheduledTime
-        );
-        require(isValid, reason);
+        // Get day and hour from scheduled time
+        DayOfWeek scheduledDay = getDayOfWeek(_scheduledTime);
+        uint8 scheduledHour = getHour(_scheduledTime);
 
-        profiles[msg.sender].balance -= totalPrice;
-        bookedSlots[_serviceId][_scheduledTime] = true;
+        // Check if the day is available for the seller
+        require(
+            sellerProfile.availableDays[scheduledDay],
+            "Day not available for seller"
+        );
+
+        // Check if the hour slot is available and valid
+        TimeSlot memory slot = sellerProfile.availableTimeSlots[scheduledHour];
+        require(
+            scheduledHour >= slot.startHour &&
+                scheduledHour < slot.endHour &&
+                scheduledHour + service.durationHours <= slot.endHour,
+            "Time slot not available or invalid"
+        );
+
+        // Check if the slot is already booked
+        require(
+            !userBookedSlots[service.seller][_scheduledTime],
+            "Time slot already booked"
+        );
+
+        // Transfer tokens from buyer to contract
+        require(
+            timeToken.transferFrom(msg.sender, address(this), totalPrice),
+            "Token transfer failed"
+        );
+
+        // Mark the slot as booked
+        userBookedSlots[service.seller][_scheduledTime] = true;
 
         purchases[_serviceId] = PurchasedService({
             serviceId: _serviceId,
@@ -182,18 +233,188 @@ contract ChronoTrade {
         require(msg.sender == service.seller, "Only seller can approve");
         require(!purchase.isApproved, "Already approved");
         require(!purchase.isCancelled, "Service is cancelled");
+        require(
+            block.timestamp >= purchase.scheduledTime,
+            "Cannot approve before scheduled time"
+        );
         require(block.timestamp >= purchase.timestamp, "Invalid timestamp");
 
         purchase.isApproved = true;
         emit ServiceApproved(_serviceId, purchase.buyer);
     }
 
-    // Helper function to check if a time slot is available
-    function isTimeSlotAvailable(
-        uint256 _serviceId,
-        uint256 _timestamp
-    ) public view returns (bool) {
-        return !bookedSlots[_serviceId][_timestamp];
+    function withdrawSeller(uint256 _serviceId) external {
+        PurchasedService storage purchase = purchases[_serviceId];
+        Service storage service = services[_serviceId];
+        uint256 totalPrice = service.durationHours * TOKEN_PER_HOUR * 10 ** 18;
+
+        require(msg.sender == service.seller, "Only seller can withdraw");
+        require(!purchase.sellerWithdrawn, "Already withdrawn");
+        require(!purchase.isCancelled, "Service is cancelled");
+
+        // Seller can withdraw in two cases:
+        // 1. Service is approved (completed)
+        // 2. Service is neither cancelled nor approved, but timeout has passed
+        bool canWithdraw = purchase.isApproved ||
+            (!purchase.isApproved &&
+                !purchase.isCancelled &&
+                block.timestamp >= purchase.timestamp + TIMEOUT_DURATION);
+
+        require(
+            canWithdraw,
+            "Cannot withdraw: service not completed and timeout not passed"
+        );
+
+        purchase.sellerWithdrawn = true;
+        require(
+            timeToken.transfer(msg.sender, totalPrice),
+            "Token transfer failed"
+        );
+
+        string memory reason = purchase.isApproved
+            ? "Service completed"
+            : "Timeout passed without completion";
+
+        emit WithdrawSuccess(msg.sender, totalPrice, reason);
+    }
+
+    function withdrawBuyer(uint256 _serviceId) external {
+        PurchasedService storage purchase = purchases[_serviceId];
+        Service storage service = services[_serviceId];
+        uint256 totalPrice = service.durationHours * TOKEN_PER_HOUR * 10 ** 18;
+
+        require(msg.sender == purchase.buyer, "Only buyer can withdraw");
+        require(!purchase.buyerWithdrawn, "Already withdrawn");
+        require(
+            purchase.isCancelled,
+            "Can only withdraw for cancelled services"
+        );
+
+        purchase.buyerWithdrawn = true;
+        require(
+            timeToken.transfer(msg.sender, totalPrice),
+            "Token transfer failed"
+        );
+
+        emit WithdrawSuccess(
+            msg.sender,
+            totalPrice,
+            "Refund for cancelled service"
+        );
+    }
+
+    function cancelService(uint256 _serviceId, string memory _reason) external {
+        PurchasedService storage purchase = purchases[_serviceId];
+        Service storage service = services[_serviceId];
+
+        require(
+            msg.sender == purchase.buyer || msg.sender == service.seller,
+            "Only buyer or seller can cancel"
+        );
+        require(!purchase.isCancelled, "Service already cancelled");
+        require(!purchase.isApproved, "Cannot cancel completed service");
+        require(
+            block.timestamp < purchase.scheduledTime,
+            "Cannot cancel after service start time"
+        );
+
+        purchase.isCancelled = true;
+        userBookedSlots[service.seller][purchase.scheduledTime] = false;
+
+        emit ServiceCancelled(_serviceId, msg.sender, _reason);
+    }
+
+    // Helper function to get user's available time slots
+    function getUserAvailableTimeSlots(
+        address _user,
+        uint256 _startTime,
+        uint256 _endTime
+    ) public view returns (uint256[] memory) {
+        UserProfile storage profile = profiles[_user];
+        require(profile.isRegistered, "User not registered");
+        require(_startTime < _endTime, "Invalid time range");
+        require(_startTime > block.timestamp, "Start time must be in future");
+
+        // Count available slots
+        uint256 availableCount = 0;
+        uint256 currentTime = _startTime;
+
+        while (currentTime < _endTime) {
+            DayOfWeek currentDay = getDayOfWeek(currentTime);
+            uint8 currentHour = getHour(currentTime);
+
+            if (profile.availableDays[currentDay]) {
+                TimeSlot memory slot = profile.availableTimeSlots[currentHour];
+                if (slot.startHour != 0 || slot.endHour != 0) {
+                    // Check if slot exists
+                    if (!userBookedSlots[_user][currentTime]) {
+                        availableCount++;
+                    }
+                }
+            }
+            currentTime += 1 hours;
+        }
+
+        // Create array of available slots
+        uint256[] memory availableSlots = new uint256[](availableCount);
+        uint256 index = 0;
+        currentTime = _startTime;
+
+        while (currentTime < _endTime && index < availableCount) {
+            DayOfWeek currentDay = getDayOfWeek(currentTime);
+            uint8 currentHour = getHour(currentTime);
+
+            if (profile.availableDays[currentDay]) {
+                TimeSlot memory slot = profile.availableTimeSlots[currentHour];
+                if (slot.startHour != 0 || slot.endHour != 0) {
+                    // Check if slot exists
+                    if (!userBookedSlots[_user][currentTime]) {
+                        availableSlots[index] = currentTime;
+                        index++;
+                    }
+                }
+            }
+            currentTime += 1 hours;
+        }
+
+        return availableSlots;
+    }
+
+    // Helper function to get available days
+    function getAvailableDays(
+        UserProfile storage profile
+    ) internal view returns (DayOfWeek[] memory) {
+        uint256 count = 0;
+        for (uint i = 0; i < 7; i++) {
+            if (profile.availableDays[DayOfWeek(i)]) {
+                count++;
+            }
+        }
+
+        DayOfWeek[] memory availableDays = new DayOfWeek[](count);
+        uint256 index = 0;
+        for (uint i = 0; i < 7; i++) {
+            if (profile.availableDays[DayOfWeek(i)]) {
+                availableDays[index] = DayOfWeek(i);
+                index++;
+            }
+        }
+        return availableDays;
+    }
+
+    // Helper function to get available time slots
+    function getAvailableTimeSlots(
+        UserProfile storage profile
+    ) internal view returns (TimeSlot[] memory) {
+        TimeSlot[] memory slots = new TimeSlot[](
+            profile.timeSlotStartHours.length
+        );
+        for (uint i = 0; i < profile.timeSlotStartHours.length; i++) {
+            slots[i] = profile.availableTimeSlots[
+                profile.timeSlotStartHours[i]
+            ];
+        }
+        return slots;
     }
 
     // Helper function to get service time details
@@ -209,10 +430,11 @@ contract ChronoTrade {
         )
     {
         Service storage service = services[_serviceId];
+        UserProfile storage sellerProfile = profiles[service.seller];
         return (
             service.durationHours,
-            service.availableDays,
-            service.availableTimeSlots
+            getAvailableDays(sellerProfile),
+            getAvailableTimeSlots(sellerProfile)
         );
     }
 
@@ -222,8 +444,11 @@ contract ChronoTrade {
         uint8 _hour
     ) public view returns (bool) {
         Service storage service = services[_serviceId];
-        for (uint i = 0; i < service.availableTimeSlots.length; i++) {
-            TimeSlot memory slot = service.availableTimeSlots[i];
+        UserProfile storage sellerProfile = profiles[service.seller];
+        for (uint i = 0; i < sellerProfile.timeSlotStartHours.length; i++) {
+            TimeSlot memory slot = sellerProfile.availableTimeSlots[
+                sellerProfile.timeSlotStartHours[i]
+            ];
             if (_hour >= slot.startHour && _hour < slot.endHour) {
                 return true;
             }
@@ -252,25 +477,80 @@ contract ChronoTrade {
         uint8 scheduledHour = uint8((_scheduledTime / 3600) % 24);
 
         // Check if the scheduled hour plus duration fits within any available time slot
-        for (uint i = 0; i < service.availableTimeSlots.length; i++) {
-            TimeSlot memory slot = service.availableTimeSlots[i];
-
-            // Check if the scheduled hour is within the slot
-            if (
-                scheduledHour >= slot.startHour && scheduledHour < slot.endHour
-            ) {
-                // Check if the service duration fits within the slot
-                if (scheduledHour + service.durationHours <= slot.endHour) {
-                    return (true, "Time slot is valid");
-                } else {
-                    return (
-                        false,
-                        "Service duration exceeds available time slot"
-                    );
-                }
+        for (uint i = 0; i < service.durationHours; i++) {
+            if (isHourAvailable(_serviceId, uint8(scheduledHour + i))) {
+                return (true, "Time slot is valid");
             }
         }
 
         return (false, "Scheduled time not in available slots");
+    }
+
+    // Helper function to get TIME token address
+    function getTimeTokenAddress() external view returns (address) {
+        return address(timeToken);
+    }
+
+    // Function to update user's available time slots
+    function updateTimeSlots(
+        DayOfWeek[] memory _availableDays,
+        TimeSlot[] memory _availableTimeSlots
+    ) external {
+        require(profiles[msg.sender].isRegistered, "User not registered");
+        require(_availableDays.length > 0, "No available days");
+        require(_availableTimeSlots.length > 0, "No available time slots");
+
+        UserProfile storage profile = profiles[msg.sender];
+
+        // Clear existing time slots
+        for (uint i = 0; i < profile.timeSlotStartHours.length; i++) {
+            delete profile.availableTimeSlots[profile.timeSlotStartHours[i]];
+        }
+        delete profile.timeSlotStartHours;
+
+        // Clear existing days
+        for (uint i = 0; i < 7; i++) {
+            profile.availableDays[DayOfWeek(i)] = false;
+        }
+
+        // Validate and set new time slots
+        for (uint i = 0; i < _availableTimeSlots.length; i++) {
+            TimeSlot memory slot = _availableTimeSlots[i];
+            require(slot.startHour < 24 && slot.endHour < 24, "Invalid hours");
+            require(slot.startHour < slot.endHour, "Invalid time slot");
+
+            profile.availableTimeSlots[slot.startHour] = slot;
+            profile.timeSlotStartHours.push(slot.startHour);
+        }
+
+        // Set new available days
+        for (uint i = 0; i < _availableDays.length; i++) {
+            profile.availableDays[_availableDays[i]] = true;
+        }
+
+        emit TimeSlotsUpdated(msg.sender);
+    }
+
+    // Helper function to check if a day is available
+    function isDayAvailable(
+        address _user,
+        DayOfWeek _day
+    ) public view returns (bool) {
+        return profiles[_user].availableDays[_day];
+    }
+
+    // Helper function to get time slot for a specific hour
+    function getTimeSlot(
+        address _user,
+        uint8 _hour
+    ) public view returns (TimeSlot memory) {
+        return profiles[_user].availableTimeSlots[_hour];
+    }
+
+    // Helper function to get all time slot start hours
+    function getTimeSlotStartHours(
+        address _user
+    ) public view returns (uint8[] memory) {
+        return profiles[_user].timeSlotStartHours;
     }
 }
