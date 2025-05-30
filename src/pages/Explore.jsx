@@ -41,7 +41,7 @@ function Explore() {
                          {/* Replace with actual user avatar */}
                         <img className="w-10 h-10 rounded-full" src="https://picsum.photos/40?random=4" alt="User Avatar" />
                         <div>
-                            <p className="font-semibold">User Name</p>
+                            <p className="font-semibold dark:text-white">User Name</p>
                             <Link to="/profile/123" className="text-sm text-slate-600 dark:text-gray-400 hover:underline">View your profile</Link>
                         </div>
                     </div>
@@ -49,8 +49,8 @@ function Explore() {
                     <button
                         className={`flex items-center space-x-3 px-4 py-2 rounded-md w-full text-left ${
                             selectedPage === "Profile"
-                                ? "dark:bg-[var(--color-secondary-dark)] bg-gray-200"
-                                : "hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                                ? "bg-[var(--color-secondary)] hover:cursor-pointer"
+                                : "hover:bg-[var(--color-hover)] hover:cursor-pointer transition-colors duration-200"
                         }`}
                         onClick={() => setSelectedPage("Profile")}
                     >
@@ -61,8 +61,8 @@ function Explore() {
                     <button
                         className={`flex items-center space-x-3 px-4 py-2 rounded-md w-full text-left ${
                             selectedPage === "Skills"
-                                ? "dark:bg-[var(--color-secondary-dark)] bg-gray-200"
-                                : "hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                                ? "bg-[var(--color-secondary)] hover:cursor-pointer"
+                                : "hover:bg-[var(--color-hover)] hover:cursor-pointer transition-colors duration-200"
                         }`}
                         onClick={() => setSelectedPage("Skills")}
                     >
@@ -73,8 +73,8 @@ function Explore() {
                     <button
                         className={`flex items-center space-x-3 px-4 py-2 rounded-md w-full text-left ${
                             selectedPage === "Timebank"
-                                ? "dark:bg-[var(--color-secondary-dark)] bg-gray-200"
-                                : "hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                                ? "bg-[var(--color-secondary)] hover:cursor-pointer"
+                                : "hover:bg-[var(--color-hover)] hover:cursor-pointer transition-colors duration-200"
                         }`}
                         onClick={() => setSelectedPage("Timebank")}
                     >
@@ -85,8 +85,8 @@ function Explore() {
                     <button
                         className={`flex items-center space-x-3 px-4 py-2 rounded-md w-full text-left ${
                             selectedPage === "Settings"
-                                ? "dark:bg-[var(--color-secondary-dark)] bg-gray-200"
-                                : "hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                                ? "bg-[var(--color-secondary)] hover:cursor-pointer"
+                                : "hover:bg-[var(--color-hover)] hover:cursor-pointer transition-colors duration-200"
                         }`}
                         onClick={() => setSelectedPage("Settings")}
                     >
