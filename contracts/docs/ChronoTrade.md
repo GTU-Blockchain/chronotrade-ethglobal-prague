@@ -150,8 +150,12 @@ function buyService(uint256 _serviceId, uint256 _scheduledTime) external
     -   `_scheduledTime`: Unix timestamp for the service
 -   Requirements:
     -   Service must be active
+    -   Buyer must not be the seller of the service
     -   Buyer must have enough TIME tokens
     -   Time slot must be valid and available
+    -   Scheduled time must be in the future
+    -   Day must be available for seller
+    -   Time slot must not be already booked
 
 ```solidity
 function cancelService(uint256 _serviceId, string memory _reason) external
@@ -182,7 +186,14 @@ function approveCompletion(uint256 _serviceId) external
     -   `_serviceId`: ID of the service
 -   Requirements:
     -   Caller must be the service seller
-    -   Service must not be already approved or cancelled
+    -   Service must not be already approved
+    -   Service must not be cancelled
+    -   Current time must be after the scheduled appointment time
+    -   Current time must be after the purchase timestamp
+-   Effects:
+    -   Marks the service as approved
+    -   Allows seller to withdraw tokens
+    -   Emits ServiceApproved event
 
 ### Withdrawals
 
