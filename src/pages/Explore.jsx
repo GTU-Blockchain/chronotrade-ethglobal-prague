@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { readContract } from "wagmi/actions";
 import { useAccount } from "wagmi";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { config, chronoTradeAddress, chronoTradeAbi } from "../config";
 import Navbar from "../components/Navbar";
 
 function Explore() {
-    const { address, isConnected } = useAccount();
+    const { isConnected } = useAccount();
     const navigate = useNavigate();
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [searchQuery, setSearchQuery] = useState("");
@@ -35,7 +35,7 @@ function Explore() {
                 setIsLoading(true);
                 setError(null);
 
-                const [servicesData, totalServices] = await readContract(
+                const [servicesData] = await readContract(
                     config,
                     {
                         address: chronoTradeAddress,
@@ -183,6 +183,15 @@ function Explore() {
                                                         Category:{" "}
                                                         {service.category}
                                                     </span>
+                                                    <span className="mx-2 text-gray-300">
+                                                        •
+                                                    </span>
+                                                    <Link
+                                                        to={`/profile/${service.seller}`}
+                                                        className="text-sm text-[var(--color-primary)] hover:underline"
+                                                    >
+                                                        View Provider Profile
+                                                    </Link>
                                                 </div>
                                             </div>
                                         </div>

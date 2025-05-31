@@ -9,6 +9,7 @@ import Details from "./pages/Details";
 import Chat from "./pages/Chat";
 import Comments from "./pages/Comments";
 import Register from "./pages/Register";
+import ViewProfile from "./pages/ViewProfile";
 
 function App() {
     const { isConnected } = useAccount();
@@ -22,6 +23,10 @@ function App() {
                     element={
                         isConnected ? <Profile /> : <Navigate to="/" replace />
                     }
+                />
+                <Route
+                    path="/profile/:address"
+                    element={<ViewProfile />}
                 />
                 <Route
                     path="/register"
