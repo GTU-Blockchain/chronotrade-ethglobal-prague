@@ -104,7 +104,7 @@ const CreateServices = () => {
         </div>
         <button
           type="submit"
-          className="w-full py-2 my-5 bg-[var(--color-primary)] rounded-3xl hover:bg-[var(--color-secondary)] duration-300 hover:cursor-pointer"
+          className="w-full py-2 my-5 bg-[var(--color-primary)] rounded-3xl hover:bg-[var(--color-secondary)] duration-300 hover:cursor-pointer text-white"
         >
           List Service
         </button>
