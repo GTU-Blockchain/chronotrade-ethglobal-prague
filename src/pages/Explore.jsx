@@ -45,8 +45,12 @@ function Explore() {
                     }
                 );
 
-                console.log("Fetched services:", servicesData);
-                setServices(servicesData);
+                // Filter out inactive services
+                const activeServices = servicesData.filter(
+                    (service) => service.isActive
+                );
+                console.log("Fetched services:", activeServices);
+                setServices(activeServices);
             } catch (err) {
                 console.error("Error fetching services:", err);
                 setError("Failed to load services. Please try again.");
@@ -195,7 +199,9 @@ function Explore() {
                                                     );
                                                     return;
                                                 }
-                                                navigate(`/service/${service.id}`);
+                                                navigate(
+                                                    `/service/${service.id}`
+                                                );
                                             }}
                                         >
                                             Trade

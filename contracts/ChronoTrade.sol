@@ -130,39 +130,9 @@ contract ChronoTrade {
     ) external {
         require(profiles[msg.sender].isRegistered, "User not registered");
         require(_durationHours > 0 && _durationHours <= 24, "Invalid duration");
-
-        UserProfile storage profile = profiles[msg.sender];
-
-        // Check if user has any available days set
-        bool hasAvailableDays = false;
-        for (uint i = 0; i < 7; i++) {
-            if (profile.availableDays[DayOfWeek(i)]) {
-                hasAvailableDays = true;
-                break;
-            }
-        }
-        require(hasAvailableDays, "No available days set");
-
-        // Check if user has any time slots set
         require(
-            profile.timeSlotStartHours.length > 0,
+            profiles[msg.sender].timeSlotStartHours.length > 0,
             "No available time slots set"
-        );
-
-        // Check if any time slot can accommodate the service duration
-        bool hasValidTimeSlot = false;
-        for (uint i = 0; i < profile.timeSlotStartHours.length; i++) {
-            TimeSlot memory slot = profile.availableTimeSlots[
-                profile.timeSlotStartHours[i]
-            ];
-            if (slot.endHour - slot.startHour >= _durationHours) {
-                hasValidTimeSlot = true;
-                break;
-            }
-        }
-        require(
-            hasValidTimeSlot,
-            "No time slot can accommodate service duration"
         );
 
         Service storage newService = services[nextServiceId];
@@ -372,12 +342,9 @@ contract ChronoTrade {
         );
         require(!purchase.isCancelled, "Service already cancelled");
         require(!purchase.isApproved, "Cannot cancel completed service");
-        require(
-            block.timestamp < purchase.scheduledTime,
-            "Cannot cancel after service start time"
-        );
 
         purchase.isCancelled = true;
+        service.isActive = false;
         userBookedSlots[service.seller][purchase.scheduledTime] = false;
 
         emit ServiceCancelled(_serviceId, msg.sender, _reason);

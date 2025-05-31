@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { readContract } from "wagmi/actions";
 import { config, chronoTradeAddress, chronoTradeAbi } from "../config";
@@ -10,6 +10,7 @@ import Timebank from "../components/Timebank";
 import CreateService from "../components/CreateServices";
 
 function Profile() {
+    const navigate = useNavigate();
     const [selectedPage, setSelectedPage] = useState("Profile");
     const [profileName, setProfileName] = useState("");
     const [isLoading, setIsLoading] = useState(true);
@@ -29,11 +30,17 @@ function Profile() {
                     });
 
                     setProfileName(profile[1]);
-                    setIsRegistered(profile[5] || false);
+                    const isUserRegistered = profile[5] || false;
+                    setIsRegistered(isUserRegistered);
+
+                    if (!isUserRegistered) {
+                        navigate("/register");
+                    }
                 } catch (error) {
                     console.error("Error fetching user profile:", error);
                     setProfileName("guest");
                     setIsRegistered(false);
+                    navigate("/register");
                 } finally {
                     setIsLoading(false);
                 }
@@ -41,7 +48,7 @@ function Profile() {
         };
 
         fetchprofileName();
-    }, [address]);
+    }, [address, navigate]);
 
     return (
         <>
