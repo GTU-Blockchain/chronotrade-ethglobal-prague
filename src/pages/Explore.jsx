@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
+import { readContract } from "wagmi/actions";
+import { useAccount } from "wagmi";
+import { config, chronoTradeAddress, chronoTradeAbi } from "../config";
+import Navbar from "../components/Navbar";
 
 function Explore() {
     const [selectedCategory, setSelectedCategory] = useState("All");
@@ -21,7 +24,6 @@ function Explore() {
                     functionName: "getAllServices",
                 });
                 setServices(result);
-                console.log(result);
             } catch (err) {
                 console.error("Error fetching services:", err);
                 setError("Failed to load services. Please try again later.");
@@ -140,52 +142,57 @@ function Explore() {
                         </div>
                     ) : (
                         filteredServices.map((service) => (
-                            <div
-                                key={service.id.toString()}
-                                className="flex items-center justify-between mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow duration-200"
-                            >
-                                <div className="flex items-center">
-                                    <div className="w-12 h-12 rounded-full bg-[var(--color-secondary)] flex items-center justify-center mr-4">
-                                        <span className="text-lg font-semibold">
-                                            {service.seller
-                                                .slice(0, 2)
-                                                .toUpperCase()}
-                                        </span>
+                            <div key={service.id.toString()} className="mb-4">
+                                <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow duration-200">
+                                    <div className="flex items-center">
+                                        <div className="w-12 h-12 rounded-full bg-[var(--color-secondary)] flex items-center justify-center mr-4">
+                                            <span className="text-lg font-semibold">
+                                                {service.seller
+                                                    ?.slice(0, 2)
+                                                    ?.toUpperCase() || "NA"}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-medium">
+                                                {service.title ||
+                                                    "Untitled Service"}
+                                            </h3>
+                                            <p className="text-gray-600 dark:text-gray-400">
+                                                {service.description ||
+                                                    "No description"}
+                                            </p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                                Duration:{" "}
+                                                {service.durationHours || 0}{" "}
+                                                hours
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-lg font-medium">
-                                            {service.title}
-                                        </h3>
-                                        <p className="text-gray-600 dark:text-gray-400">
-                                            {service.description}
-                                        </p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                            Duration: {service.durationHours}{" "}
-                                            hours
-                                        </p>
-                                    </div>
+                                    <button
+                                        className="px-6 py-2 bg-[var(--color-primary)] text-white rounded-full hover:bg-[var(--color-hover)] hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled={
+                                            !address ||
+                                            address === service.seller
+                                        }
+                                    >
+                                        {!address
+                                            ? "Connect Wallet"
+                                            : address === service.seller
+                                            ? "Your Service"
+                                            : "Trade"}
+                                    </button>
                                 </div>
-                                <button
-                                    className="px-6 py-2 bg-[var(--color-primary)] text-white rounded-full hover:bg-[var(--color-hover)] hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                    disabled={
-                                        !address || address === service.seller
-                                    }
-                                >
-                                    {!address
-                                        ? "Connect Wallet"
-                                        : address === service.seller
-                                        ? "Your Service"
-                                        : "Trade"}
-                                </button>
+                                <div className="mt-2 flex justify-end">
+                                    <Link
+                                        to="/details"
+                                        className="px-6 py-2 bg-[var(--color-secondary)] text-gray-700 rounded-full hover:bg-[var(--color-hover)] hover:cursor-pointer"
+                                    >
+                                        View Details
+                                    </Link>
+                                </div>
                             </div>
-                            <button
-                                className="px-6 py-2 bg-[var(--color-secondary)] text-gray-700 rounded-full hover:bg-[var(--color-hover)] hover:cursor-pointer"
-                            >
-                                <Link to="/details">View Details</Link>
-                            </button>
-                        </div>
-                    ))}
-
+                        ))
+                    )}
                 </div>
             </section>
         </div>
