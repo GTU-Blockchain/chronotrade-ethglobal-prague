@@ -4,7 +4,7 @@ import { ReactTyped } from "react-typed";
 import { useAccount } from "wagmi";
 import { readContract } from "wagmi/actions";
 import { config, chronoTradeAddress, chronoTradeAbi } from "../config";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 function Home() {
     const { isConnected } = useAccount();
@@ -334,25 +334,28 @@ function Home() {
                             return (
                                 <div
                                     key={i}
-                                    onClick={() =>
-                                        navigate(`/service/${service.id}`)
-                                    }
+                                    onClick={() => navigate(`/service/${service.id}`)}
                                     className="bg-white dark:bg-gray-800 rounded-xl p-5 hover:shadow-lg dark:hover:shadow-gray-700/30 transition-all duration-200 hover:scale-[1.01] min-h-[280px] flex flex-col border border-gray-200 dark:border-gray-700 cursor-pointer"
                                 >
-                                    <div className="flex items-center mb-4">
-                                        <div className="w-10 h-10 bg-[var(--color-primary)] rounded-full flex items-center justify-center text-white mr-3">
-                                            {getInitials(
-                                                getSellerName(service.seller)
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-sm text-gray-900 dark:text-white">
-                                                {getSellerName(service.seller)}
-                                            </p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                {service.category}
-                                            </p>
-                                        </div>
+                                    <div className="flex items-center mb-4" onClick={(e) => e.stopPropagation()}>
+                                        <Link
+                                            to={`/profile/${service.seller}`}
+                                            className="flex items-center hover:opacity-80 transition-opacity"
+                                        >
+                                            <div className="w-10 h-10 bg-[var(--color-primary)] rounded-full flex items-center justify-center text-white mr-3">
+                                                {getInitials(
+                                                    getSellerName(service.seller)
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-sm text-gray-900 dark:text-white">
+                                                    {getSellerName(service.seller)}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {service.category}
+                                                </p>
+                                            </div>
+                                        </Link>
                                     </div>
                                     <h4 className="font-semibold text-base mb-2 text-gray-900 dark:text-white">
                                         {service.title}

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useReadContract, useWriteContract } from "wagmi";
 import { useAccount } from "wagmi";
-import { config, chronoTradeAddress, chronoTradeAbi } from "../config";
+import { chronoTradeAddress, chronoTradeAbi } from "../config";
 import Navbar from "../components/Navbar";
 
 function Details() {
   const { id } = useParams();
-  const { address, isConnected } = useAccount();
-  const [error, setError] = useState(null);
+  const { isConnected } = useAccount();
 
   // Fetch service and seller details using useReadContract
   const { 
@@ -110,22 +109,27 @@ function Details() {
             {service.description || 'No description available'}
           </p>
           <div className="flex items-center mb-6">
-            <div className="w-20 h-20 rounded-full bg-[var(--color-secondary)] flex items-center justify-center mr-4">
-              <span className="text-2xl font-semibold text-white">
-                {sellerName ? sellerName.charAt(0).toUpperCase() : '?'}
-              </span>
-            </div>
-            <div>
-              <div className="text-lg font-semibold">{sellerName || 'Unknown User'}</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Rating: {averageRating} ({sellerRatingCount} reviews)
+            <Link
+              to={`/profile/${sellerAddress}`}
+              className="flex items-center hover:opacity-80 transition-opacity"
+            >
+              <div className="w-20 h-20 rounded-full bg-[var(--color-secondary)] flex items-center justify-center mr-4">
+                <span className="text-2xl font-semibold text-white">
+                  {sellerName ? sellerName.charAt(0).toUpperCase() : '?'}
+                </span>
               </div>
-              {sellerDescription && (
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {sellerDescription}
+              <div>
+                <div className="text-lg font-semibold">{sellerName || 'Unknown User'}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Rating: {averageRating} ({sellerRatingCount} reviews)
                 </div>
-              )}
-            </div>
+                {sellerDescription && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {sellerDescription}
+                  </div>
+                )}
+              </div>
+            </Link>
           </div>
           <div className="flex items-center mb-6">
             <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 mr-4">
