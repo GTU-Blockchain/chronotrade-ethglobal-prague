@@ -44,11 +44,11 @@ const CreateServices = () => {
                         functionName: "getProfile",
                         args: [address],
                     });
-                    console.log(
-                        "Full profile data:",
-                        profile,
-                        profile.isRegistered
-                    );
+                    console.log("Full profile data:", profile, profile[5]);
+
+                    // Check if user has time slots set
+                    const hasTimeSlots = profile[8].length > 0; // timeSlotStartHours
+                    console.log("Has time slots:", hasTimeSlots);
 
                     // Check registration status separately
                     const registered = await readContract(config, {
@@ -57,14 +57,12 @@ const CreateServices = () => {
                         functionName: "isUserRegistered",
                         args: [address],
                     });
-                    console.log(
-                        "Registration status from isUserRegistered:",
-                        registered
-                    );
-                    console.log(
-                        "Registration status from profile:",
-                        profile[5]
-                    );
+                    console.log("Registration status:", registered);
+
+                    if (registered && !hasTimeSlots) {
+                        setError("Please set your available time slots first");
+                        navigate("/profile");
+                    }
 
                     setIsRegistered(registered);
                 } catch (err) {
@@ -98,13 +96,84 @@ const CreateServices = () => {
             });
             console.log("Profile data before service creation:", profile);
 
-            if (!profile.isRegistered) {
+            if (!profile[5]) {
                 console.log(
                     "Profile shows not registered, redirecting to register page"
                 );
                 setError("Please register your profile first");
                 navigate("/register");
                 return;
+            }
+
+            if (profile[8].length === 0) {
+                // timeSlotStartHours
+                console.log("No time slots set, redirecting to profile page");
+                setError("Please set your available time slots first");
+                navigate("/profile");
+                return;
+            }
+
+            try {
+                setIsLoading(true);
+                setError(null);
+
+                const hours = parseInt(formData.hours);
+                if (isNaN(hours) || hours <= 0 || hours > 24) {
+                    setError("Duration must be between 1 and 24 hours");
+                    return;
+                }
+
+                if (!formData.category) {
+                    setError("Please select a category");
+                    return;
+                }
+
+                console.log("Creating service with data:", {
+                    title: formData.title,
+                    description: formData.description,
+                    category: formData.category,
+                    hours: hours,
+                    address: address,
+                    isRegistered: isRegistered,
+                });
+
+                const result = await writeContract(config, {
+                    address: chronoTradeAddress,
+                    abi: chronoTradeAbi,
+                    functionName: "createService",
+                    args: [
+                        formData.title,
+                        formData.description,
+                        formData.category,
+                        hours,
+                    ],
+                });
+
+                await waitForTransactionReceipt(config, {
+                    hash: result,
+                });
+
+                // Reset form and redirect
+                setFormData({
+                    title: "",
+                    description: "",
+                    category: "",
+                    hours: "",
+                });
+                navigate("/profile");
+            } catch (err) {
+                console.error("Error creating service:", err);
+                if (err.message.includes("No time slots set")) {
+                    setError("Please set your available time slots first");
+                    navigate("/profile");
+                } else {
+                    setError(
+                        err.message ||
+                            "Failed to create service. Please try again."
+                    );
+                }
+            } finally {
+                setIsLoading(false);
             }
         } catch (err) {
             console.error(
@@ -113,63 +182,6 @@ const CreateServices = () => {
             );
             setError("Error verifying profile status");
             return;
-        }
-
-        try {
-            setIsLoading(true);
-            setError(null);
-
-            const hours = parseInt(formData.hours);
-            if (isNaN(hours) || hours <= 0 || hours > 24) {
-                setError("Duration must be between 1 and 24 hours");
-                return;
-            }
-
-            if (!formData.category) {
-                setError("Please select a category");
-                return;
-            }
-
-            console.log("Creating service with data:", {
-                title: formData.title,
-                description: formData.description,
-                category: formData.category,
-                hours: hours,
-                address: address,
-                isRegistered: isRegistered,
-            });
-
-            const result = await writeContract(config, {
-                address: chronoTradeAddress,
-                abi: chronoTradeAbi,
-                functionName: "createService",
-                args: [
-                    formData.title,
-                    formData.description,
-                    formData.category,
-                    hours,
-                ],
-            });
-
-            await waitForTransactionReceipt(config, {
-                hash: result,
-            });
-
-            // Reset form and redirect
-            setFormData({
-                title: "",
-                description: "",
-                category: "",
-                hours: "",
-            });
-            navigate("/profile");
-        } catch (err) {
-            console.error("Error creating service:", err);
-            setError(
-                err.message || "Failed to create service. Please try again."
-            );
-        } finally {
-            setIsLoading(false);
         }
     };
 
