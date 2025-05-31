@@ -19,6 +19,7 @@
         "@walletconnect/core": "^2.21.0",
         "@walletconnect/utils": "^2.21.0",
         "react": "^19.1.0",
+        "react-typed": "^2.0.12",
         "react-dom": "^19.1.0",
         "react-router-dom": "^7.6.1",
         "tailwindcss": "^4.1.8",

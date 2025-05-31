@@ -1,17 +1,56 @@
 import Navbar from "../components/Navbar";
 import { data } from "../assets/temp";
+import { ReactTyped } from "react-typed";
 
 function Home() {
   return (
     <main
       id="home"
-      className="min-h-screen bg-white dark:bg-gradient-to-br dark:via-blue-950 dark:from-gray-800 dark:to-gray-800 text-black dark:text-white flex flex-col items-center justify-center"
+      className="min-h-screen bg-white dark:bg-[var(--color-background-dark)] text-black dark:text-white flex flex-col items-center justify-center "
     >
       <Navbar />
       <section className="w-full min-h-screen flex flex-col items-center justify-center text-center">
-        <h1 className="text-5xl font-bold mb-4">Welcome to ChronoTrade</h1>
+        <h1 className="text-5xl font-bold mb-4">
+          Welcome to{" "}
+          <span className="relative group">
+            <span
+              className="text-black dark:text-white"
+              style={{
+                position: "relative",
+                zIndex: 1,
+              }}
+            >
+              Chrono
+              <span className="bg-gradient-to-r from-green-500 to-[var(--color-primary)] bg-clip-text text-transparent ">
+                Trade
+              </span>
+            </span>
+            <span
+              className="absolute left-0 right-0 bottom-0 h-1 pointer-events-none transition-transform duration-200 group-hover:-rotate-1"
+              style={{
+                background:
+                  "linear-gradient(90deg, #22c55e 0%, var(--color-primary) 100%)",
+                borderRadius: "4px",
+                zIndex: 0,
+                transformOrigin: "center bottom",
+              }}
+            />
+          </span>
+        </h1>
         <p className="text-lg mb-8">
-          Your gateway to decentralized trading and finance.
+          <ReactTyped
+            className="text-xl font-semibold text-center text-black/50 dark:text-white/50"
+            strings={[
+              "Trade Your Time, Earn Value",
+              "AI-Powered Service Exchange",
+              "Decentralized Time Marketplace",
+              "Empowering Users with Blockchain",
+              "Get and Offer Services Seamlessly",
+            ]}
+            typeSpeed={40}
+            backSpeed={50}
+            loop
+          />
         </p>
 
         <form>

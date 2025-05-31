@@ -32,7 +32,7 @@ function Navbar() {
               onClick={handleHomeClick}
             >
               Chrono
-              <span className="bg-gradient-to-r from-indigo-500 to-cyan-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-green-500 to-[var(--color-primary)] bg-clip-text text-transparent">
                 Trade
               </span>
             </Link>
