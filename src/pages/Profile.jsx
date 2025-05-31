@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
 import ProfileContent from "../components/ProfileContent";
 import Settings from "../components/Settings";
 import Timebank from "../components/Timebank";
@@ -9,8 +10,9 @@ function Profile() {
     const [selectedPage, setSelectedPage] = useState("Profile");
 
     return (
-        
-            <section className="grid grid-cols-4 dark:bg-[var(--color-background-dark)] bg-white dark:text-white text-black min-h-screen">
+        <>
+            <Navbar />
+            <section className="pt-14 grid grid-cols-4 dark:bg-[var(--color-background-dark)] bg-white dark:text-white text-black min-h-screen">
                 {/* Sidebar */}
                 <div className="col-span-1 h-full flex flex-col px-6 py-8 space-y-2 border-r border-gray-200 dark:border-gray-700">
                     <div className="flex items-center space-x-3 mb-6">
@@ -96,7 +98,7 @@ function Profile() {
                     {selectedPage === "Settings" && <Settings />}
                 </div>
             </section>
-        
+        </>
     );
 }
 
