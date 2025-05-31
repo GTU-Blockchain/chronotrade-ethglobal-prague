@@ -4,6 +4,7 @@ import { ReactTyped } from "react-typed";
 import { useAccount } from "wagmi";
 import { readContract } from "wagmi/actions";
 import { config, chronoTradeAddress, chronoTradeAbi } from "../config";
+import { useNavigate } from "react-router-dom";
 
 function Home() {
     const { isConnected } = useAccount();
@@ -14,6 +15,8 @@ function Home() {
     const [activeTab, setActiveTab] = useState("latest"); // "latest" or "trending"
     const [serviceDetails, setServiceDetails] = useState({}); // Store additional service details
     const [sellerProfiles, setSellerProfiles] = useState({});
+    const navigate = useNavigate();
+    const [aiInput, setAiInput] = useState("");
 
     // Fetch all services and their details
     useEffect(() => {
@@ -158,11 +161,6 @@ function Home() {
         return profile ? profile[1] : "Unknown Seller"; // profile[1] is the name field
     };
 
-    // Helper function to format address
-    const formatAddress = (address) => {
-        return `${address.slice(0, 6)}...${address.slice(-4)}`;
-    };
-
     // Helper function to get service rating
     const getServiceRating = (serviceId) => {
         const details = serviceDetails[serviceId];
@@ -171,6 +169,12 @@ function Home() {
             rating: Number(details.averageRating).toFixed(1),
             count: Number(details.commentCount),
         };
+    };
+
+    const handleAiSubmit = (e) => {
+        e.preventDefault();
+        if (!aiInput.trim()) return;
+        navigate("/chat", { state: { initialMessage: aiInput } });
     };
 
     return (
@@ -223,16 +227,52 @@ function Home() {
                     />
                 </p>
 
-                <form>
+                <form onSubmit={handleAiSubmit}>
                     <div className="flex items-center justify-center space-x-2">
-                        <input
-                            type="text"
-                            placeholder="Ask AI Assistant"
-                            className="p-2 rounded-2xl border-slate-400 border-2 bg-gray-200 dark:bg-gray-700 dark:text-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 w-2xl px-4 py-3"
-                        />
+                        <div className="relative flex items-center">
+                            <input
+                                type="text"
+                                placeholder="Ask AI Assistant"
+                                className="p-2 rounded-2xl border-slate-400 border-2 bg-gray-200 dark:bg-gray-700 dark:text-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-lime-500 w-2xl px-4 py-3 pl-10"
+                                value={aiInput}
+                                onChange={(e) => setAiInput(e.target.value)}
+                            />
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                >
+                                    <circle cx="11" cy="11" r="7" />
+                                    <line
+                                        x1="21"
+                                        y1="21"
+                                        x2="16.65"
+                                        y2="16.65"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
+                            </span>
+                        </div>
                         <button
                             type="submit"
-                            className="transition-colors duration-200 bg-[var(--color-primary)] text-white px-6 py-3 rounded-2xl border-2 border-[var(--color-primary)] hover:bg-green-950 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            className="transition-colors duration-200 bg-gradient-to-r from-[var(--color-primary)] to-lime-400 bg-[length:200%_200%] bg-left hover:bg-right text-white px-6 py-3 rounded-2xl border-2 border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-lime-400 cursor-pointer"
+                            style={{
+                                backgroundSize: "200% 200%",
+                                backgroundPosition: "left",
+                                transition: "background-position 0.5s",
+                            }}
+                            onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundPosition = "right")
+                            }
+                            onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundPosition = "left")
+                            }
                         >
                             Ask
                         </button>
