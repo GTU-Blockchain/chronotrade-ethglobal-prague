@@ -8,33 +8,50 @@ import Explore from "./pages/Explore";
 import Details from "./pages/Details";
 import Chat from "./pages/Chat";
 import Comments from "./pages/Comments";
+import Register from "./pages/Register";
 
 function App() {
-  const { isConnected } = useAccount();
+    const { isConnected } = useAccount();
 
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route
-          path="/profile"
-          element={isConnected ? <Profile /> : <Navigate to="/" replace />}
-        />
-        <Route
-          path="/my-services/:address"
-          element={isConnected ? <MyServices /> : <Navigate to="/" replace />}
-        />
-        <Route path="/explore" element={<Explore />} />
-        <Route path="/details" element={<Details />} />
-        <Route
-          path="/chat"
-          element={isConnected ? <Chat /> : <Navigate to="/" replace />}
-        />
-        <Route path="/comments" element={<Comments />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
-  );
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<Home />} />
+                <Route
+                    path="/profile"
+                    element={
+                        isConnected ? <Profile /> : <Navigate to="/" replace />
+                    }
+                />
+                <Route
+                    path="/register"
+                    element={
+                        isConnected ? <Register /> : <Navigate to="/" replace />
+                    }
+                />
+                <Route
+                    path="/my-services/:address"
+                    element={
+                        isConnected ? (
+                            <MyServices />
+                        ) : (
+                            <Navigate to="/" replace />
+                        )
+                    }
+                />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/details" element={<Details />} />
+                <Route
+                    path="/chat"
+                    element={
+                        isConnected ? <Chat /> : <Navigate to="/" replace />
+                    }
+                />
+                <Route path="/comments" element={<Comments />} />
+                <Route path="*" element={<NotFound />} />
+            </Routes>
+        </BrowserRouter>
+    );
 }
 
 export default App;
