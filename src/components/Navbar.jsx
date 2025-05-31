@@ -62,12 +62,21 @@ function Navbar() {
                 to="/chat"
                 className="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white hover:-translate-y-0.5 transition-all duration-200 hover:font-bold"
               >
-                Dummy2
+                ChronoBot
               </Link>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
+            {isConnected && (
+              <Link
+                to="/profile"
+                state={{ showCreateService: true }}
+                className="px-4 py-2 bg-gradient-to-r from-green-500 to-[var(--color-primary)] text-white rounded-lg hover:opacity-90 transition-all duration-200 font-medium"
+              >
+                Create Service
+              </Link>
+            )}
             <ConnectButton chainStatus={"none"} accountStatus={"avatar"} />
             {isConnected && address && (
               <Link to="/profile" className="mx-2">
