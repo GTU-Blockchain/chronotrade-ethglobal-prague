@@ -13,6 +13,31 @@ const ProfileContent = () => {
 
   const [showPopup, setShowPopup] = useState(false)
   const [selectedService, setSelectedService] = useState(null)
+  const [availability, setAvailability] = useState([])
+  const [selectedDay, setSelectedDay] = useState('')
+  const [selectedStartTime, setSelectedStartTime] = useState('')
+  const [selectedEndTime, setSelectedEndTime] = useState('')
+
+  const walletInfo = {
+    address: '0x1234...abcd',
+    timeTokens: 120, // Example token balance
+  }
+
+  const handleAddAvailability = () => {
+    if (selectedDay && selectedStartTime && selectedEndTime) {
+      setAvailability((prev) => [
+        ...prev,
+        { day: selectedDay, startTime: selectedStartTime, endTime: selectedEndTime },
+      ])
+      setSelectedDay('')
+      setSelectedStartTime('')
+      setSelectedEndTime('')
+    }
+  }
+
+  const handleRemoveAvailability = (index) => {
+    setAvailability((prev) => prev.filter((_, i) => i !== index))
+  }
 
   const handleRemoveService = (service) => {
     setSelectedService(service)
@@ -47,6 +72,95 @@ const ProfileContent = () => {
 
   return (
     <div className="p-6">
+      {/* Wallet Section */}
+      <div className="mb-8 p-4 bg-[var(--color-secondary)] rounded-lg shadow-lg text-black">
+        <h2 className="text-2xl font-semibold mb-2">Wallet Information</h2>
+        <p className="text-sm mb-1">
+          <span className="font-medium">Address:</span> {walletInfo.address}
+        </p>
+        <p className="text-sm">
+          <span className="font-medium">Time Tokens:</span> {walletInfo.timeTokens}
+        </p>
+      </div>
+
+      {/* Availability Section */}
+      <div className="mb-8 p-4 bg-white rounded-lg shadow-lg">
+        <h2 className="text-2xl font-semibold mb-4">Availability</h2>
+        <div className="flex flex-wrap gap-4 mb-5">
+          <input
+            type="date"
+            value={selectedDay}
+            onChange={(e) => setSelectedDay(e.target.value)}
+            className="border rounded px-4 py-2 w-full"
+          />
+          <div className="flex gap-4 w-full">
+            <select
+              value={selectedStartTime}
+              onChange={(e) => setSelectedStartTime(e.target.value)}
+              className="border rounded px-4 py-2 w-full"
+            >
+              <option value="">Start Time</option>
+              {Array.from({ length: 48 }, (_, i) => {
+                const hours = Math.floor(i / 2)
+                const minutes = i % 2 === 0 ? '00' : '30'
+                return (
+                  <option key={i} value={`${hours}:${minutes}`}>
+                    {`${hours}:${minutes}`}
+                  </option>
+                )
+              })}
+            </select>
+            <select
+              value={selectedEndTime}
+              onChange={(e) => setSelectedEndTime(e.target.value)}
+              className="border rounded px-4 py-2 w-full"
+            >
+              <option value="">End Time</option>
+              {Array.from({ length: 48 }, (_, i) => {
+                const hours = Math.floor(i / 2)
+                const minutes = i % 2 === 0 ? '00' : '30'
+                const timeValue = `${hours}:${minutes}`
+                const isDisabled =
+                  selectedStartTime &&
+                  parseFloat(timeValue.replace(':', '.')) <= parseFloat(selectedStartTime.replace(':', '.'))
+                return (
+                  <option key={i} value={timeValue} disabled={isDisabled}>
+                    {`${hours}:${minutes}`}
+                  </option>
+                )
+              })}
+            </select>
+          </div>
+          <button
+            onClick={handleAddAvailability}
+            className="px-4 py-2 bg-[var(--color-primary)] text-white rounded hover:bg-[var(--color-secondary)] hover:cursor-pointer transition-colors duration-300"
+          >
+            Add
+          </button>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Selected Availability</h3>
+          <ul className="space-y-3">
+            {availability.map((slot, index) => (
+              <li
+                key={index}
+                className="flex justify-between items-center border rounded px-4 py-2"
+              >
+                <span>
+                  {slot.day} from {slot.startTime} to {slot.endTime}
+                </span>
+                <button
+                  onClick={() => handleRemoveAvailability(index)}
+                  className="text-red-600 hover:bg-red-100 p-2 rounded-2xl hover:cursor-pointer duration-500"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
       <h2 className="text-2xl font-semibold mb-4">Service and Skills</h2>
       <div className="flex flex-wrap gap-3 mb-14">
         {services.map((service, index) => (
