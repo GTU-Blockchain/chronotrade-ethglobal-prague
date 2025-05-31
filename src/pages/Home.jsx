@@ -23,7 +23,7 @@ function Home() {
             />
             <button
               type="submit"
-              className="transition-colors duration-200 bg-[var(--color-primary)] text-white px-6 py-3 rounded-2xl border-2 border-blue-800 hover:bg-green-950 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="transition-colors duration-200 bg-[var(--color-primary)] text-white px-6 py-3 rounded-2xl border-2 border-[var(--color-primary)] hover:bg-green-950 focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               Ask
             </button>

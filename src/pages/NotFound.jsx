@@ -11,8 +11,8 @@ const NotFound = () => {
         Sorry, the page you are looking for does not exist.
       </p>
       <a
-        href="/timeswap-gtub-hackathon/"
-        className="bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:bg-purple-700 transition-colors duration-200"
+        href="/"
+        className="bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:bg-green-300 transition-colors duration-200"
       >
         Go Home
       </a>
