@@ -1,24 +1,41 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAccount } from "wagmi";
+import { useCallback } from "react";
 
 function Navbar() {
   const { address, isConnected } = useAccount();
+  const location = useLocation();
+
+  // Handler for ChronoTrade click
+  const handleHomeClick = useCallback(
+    (e) => {
+      if (location.pathname === "/") {
+        e.preventDefault();
+        const el = document.getElementById("home");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+        }
+      }
+    },
+    [location.pathname]
+  );
 
   return (
     <nav className="fixed top-0 w-full z-40 bg-[rgba(0, 0, 0, 0.8)] backdrop-blur-lg border-b border-white/50 shadow-lg h-16">
       <div className="w-full mx-auto px-30">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
-            <a
-              href="#home"
+            <Link
+              to="/"
               className="font-mono text-xl font-bold dark:text-white text-black mr-10"
+              onClick={handleHomeClick}
             >
               Chrono
               <span className="bg-gradient-to-r from-indigo-500 to-cyan-500 bg-clip-text text-transparent">
                 Trade
               </span>
-            </a>
+            </Link>
 
             <div className="flex items-center space-x-8">
               <Link
