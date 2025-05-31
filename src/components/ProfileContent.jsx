@@ -70,6 +70,14 @@ const ProfileContent = () => {
     },
   ]
 
+  const ratingStats = [
+    { star: '5', percent: 80 },
+    { star: '4', percent: 15 },
+    { star: '3', percent: 5 },
+    { star: '2', percent: 0 },
+    { star: '1', percent: 0 },
+  ]
+
   return (
     <div className="p-6">
       {/* Wallet Section */}
@@ -157,27 +165,29 @@ const ProfileContent = () => {
             Add
           </button>
         </div>
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Selected Availability</h3>
-          <ul className="space-y-3">
-            {availability.map((slot, index) => (
-              <li
-                key={index}
-                className="flex justify-between items-center border rounded px-4 py-2"
-              >
-                <span>
-                  {slot.day} from {slot.startTime} to {slot.endTime}
-                </span>
-                <button
-                  onClick={() => handleRemoveAvailability(index)}
-                  className="text-red-600 hover:bg-red-100 p-2 rounded-2xl hover:cursor-pointer duration-500"
+        {availability.length > 0 && (
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Selected Availability</h3>
+            <ul className="space-y-3">
+              {availability.map((slot, index) => (
+                <li
+                  key={index}
+                  className="flex justify-between items-center border rounded px-4 py-2"
                 >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+                  <span>
+                    {slot.day} from {slot.startTime} to {slot.endTime}
+                  </span>
+                  <button
+                    onClick={() => handleRemoveAvailability(index)}
+                    className="text-red-600 hover:bg-red-100 p-2 rounded-2xl hover:cursor-pointer duration-500"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
 
@@ -205,6 +215,7 @@ const ProfileContent = () => {
       )}
 
       <h2 className="text-2xl font-semibold mb-4">User Comments and Reviews</h2>
+
       <div className="space-y-6">
         {reviews.map((review, index) => (
           <div key={index} className="p-4">
@@ -221,6 +232,28 @@ const ProfileContent = () => {
             </div>
             <p className="text-[var(--color-primary)] text-lg mb-1">{review.stars}</p>
             <p className="mb-2">{review.comment}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Rating Overview */}
+      <div className="mt-10 mb-10">
+        <div className="flex items-center gap-2 text-4xl font-bold">
+          4.9
+          <span className="text-2xl font-normal dark:text-white">★★★★☆</span>
+        </div>
+        <div className="text-gray-400 text-md mb-3">150 reviews</div>
+
+        {ratingStats.map((r) => (
+          <div key={r.star} className="flex items-center mb-2">
+            <span className="w-5">{r.star}</span>
+            <div className="bg-[var(--color-secondary)] rounded h-2 w-80 mx-2 overflow-hidden">
+              <div
+                className="bg-[var(--color-primary)] h-2"
+                style={{ width: `${r.percent}%` }}
+              />
+            </div>
+            <span className="text-gray-400 text-md mx-2">{r.percent}%</span>
           </div>
         ))}
       </div>
