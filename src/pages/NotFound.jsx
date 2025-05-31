@@ -12,7 +12,7 @@ const NotFound = () => {
       </p>
       <a
         href="/"
-        className="bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:bg-green-300 transition-colors duration-200"
+        className="bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:bg-emerald-700 transition-all duration-200 hover:-translate-y-0.5 transform hover:shadow-xl hover:scale-105"
       >
         Go Home
       </a>
