@@ -330,7 +330,8 @@ function Home() {
                             return (
                                 <div
                                     key={i}
-                                    className="bg-white dark:bg-gray-800 rounded-xl p-5 hover:shadow-lg dark:hover:shadow-gray-700/30 transition-all duration-200 hover:scale-[1.01] min-h-[280px] flex flex-col border border-gray-200 dark:border-gray-700"
+                                    onClick={() => navigate(`/service/${service.id}`)}
+                                    className="bg-white dark:bg-gray-800 rounded-xl p-5 hover:shadow-lg dark:hover:shadow-gray-700/30 transition-all duration-200 hover:scale-[1.01] min-h-[280px] flex flex-col border border-gray-200 dark:border-gray-700 cursor-pointer"
                                 >
                                     <div className="flex items-center mb-4">
                                         <div className="w-10 h-10 bg-[var(--color-primary)] rounded-full flex items-center justify-center text-white mr-3">
