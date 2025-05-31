@@ -44,9 +44,9 @@ function Home() {
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-start items-center gap-6 w-full">
+        <div className="grid grid-cols-4 gap-10">
           {data.map((x, i) => (
-            <div key={i} className="w-40">
+            <div key={i} className="w-full">
               <img src={x.image} className="w-full rounded-xl" />
               <h4 className="font-semibold mt-4">{x.title}</h4>
               <p className="text-sm text-slate-400">{x.description}</p>
