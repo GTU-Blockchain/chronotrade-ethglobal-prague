@@ -50,7 +50,7 @@ const TimeBank = () => {
         </p>
 
         {/* Account Summary */}
-        <div className="flex justify-between items-start dark:bg-gray-800 p-6 rounded-lg border border-gray-200 mb-8">
+        <div className="flex justify-between items-start p-6 rounded-lg border border-gray-200 dark:border-gray-600 mb-8">
           <div>
             <h2 className="text-xl font-semibold text-black dark:text-white">
               Account Summary
@@ -72,7 +72,7 @@ const TimeBank = () => {
             className={`pb-2 hover:cursor-pointer ${
               activeTab === "provided"
                 ? "border-b-2 border-[var(--color-primary)] text-[var(--color-primary)] font-semibold"
-                : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:cursor-pointer"
+                : "text-gray-600 dark:text-gray-200 hover:text-black dark:hover:text-white hover:cursor-pointer"
             }`}
             onClick={() => setActiveTab("provided")}
           >
@@ -82,7 +82,7 @@ const TimeBank = () => {
             className={`pb-2 hover:cursor-pointer ${
               activeTab === "received"
                 ? "border-b-2 border-[var(--color-primary)] text-[var(--color-primary)] font-semibold"
-                : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:cursor-pointer"
+                : "text-gray-600 dark:text-gray-200 hover:text-black dark:hover:text-white hover:cursor-pointer"
             }`}
             onClick={() => setActiveTab("received")}
           >
@@ -95,7 +95,7 @@ const TimeBank = () => {
           {services.map((service, index) => (
             <div
               key={index}
-              className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-4 rounded-lg shadow-sm"
+              className="flex justify-between items-center bg-gray-100 dark:bg-gray-700 p-4 rounded-lg shadow-sm"
             >
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-[var(--color-secondary)]">
@@ -135,13 +135,13 @@ const TimeBank = () => {
                   <h3 className="text-lg font-medium text-black dark:text-white">
                     {service.title}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     Date: {service.date} | Duration: {service.duration} | Rating:{" "}
                     {service.rating}
                   </p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 {activeTab === "provided"
                   ? `Recipient: ${service.recipient}`
                   : `Provider: ${service.provider}`}
