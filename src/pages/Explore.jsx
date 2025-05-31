@@ -3,22 +3,25 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 
 function Explore() {
+
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [searchQuery, setSearchQuery] = useState("");
 
-    const categories = [
-        "All",
-        "Programming",
-        "Design",
-        "Mentorship",
-        "Oil Marketing",
-        "Oil Writing",
-        "Illustration",
-        "Music",
-        "Video Production",
-        "Photography",
-        "Other",
-    ];
+
+  const categories = [
+    "All",
+    "Programming",
+    "Design",
+    "Mentorship",
+    "Oil Marketing",
+    "Oil Writing",
+    "Illustration",
+    "Music",
+    "Video Production",
+    "Photography",
+    "Other",
+  ];
+
 
     const services = [
         {
