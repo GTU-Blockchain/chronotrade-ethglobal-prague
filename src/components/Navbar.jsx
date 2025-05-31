@@ -59,7 +59,7 @@ function Navbar() {
               )}
 
               <Link
-                to="/"
+                to="/chat"
                 className="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white hover:-translate-y-0.5 transition-all duration-200 hover:font-bold"
               >
                 Dummy2

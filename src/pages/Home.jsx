@@ -1,8 +1,15 @@
 import Navbar from "../components/Navbar";
 import { data } from "../assets/temp";
 import { ReactTyped } from "react-typed";
+import { useNavigate } from "react-router-dom";
 
 function Home() {
+  const navigate = useNavigate();
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const inputValue = e.target.elements[0].value;
+    navigate("/chat", { state: { initialMessage: inputValue } });
+  };
   return (
     <main
       id="home"
@@ -53,7 +60,7 @@ function Home() {
           />
         </p>
 
-        <form>
+        <form onSubmit={handleSubmit}>
           <div className="flex items-center justify-center space-x-2">
             <div className="relative flex items-center">
               <input
