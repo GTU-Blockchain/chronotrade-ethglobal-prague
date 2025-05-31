@@ -9,3 +9,8 @@
 
     --color-background-dark: #3a263a;
 }
+
+
+html {
+  scroll-behavior: smooth;
+}
