@@ -1,5 +1,4 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import React from "react";
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 
