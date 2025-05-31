@@ -76,7 +76,7 @@ function Explore() {
     return (
         <>
             <Navbar />
-            <div className="pt-14 flex flex-col jsutify-center items-center dark:bg-[var(--color-background-dark)] bg-white dark:text-white text-black min-h-screen">
+            <div className="pt-14 flex flex-col justify-center items-center dark:bg-[var(--color-background-dark)] bg-white dark:text-white text-black min-h-screen">
                 <section className="w-5xl pt-8 px-12 overflow-auto">
                     {/* Main Content */}
                     <h1 className="text-3xl font-semibold mb-2">Find a Skill</h1>
