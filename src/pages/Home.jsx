@@ -23,7 +23,7 @@ function Home() {
             />
             <button
               type="submit"
-              className="transition-colors duration-200 bg-[var(--color-primary)] text-white px-6 py-3 rounded-2xl border-2 border-blue-800 hover:bg-green-950 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="transition-colors duration-200 bg-[var(--color-primary)] text-white px-6 py-3 rounded-2xl border-2 border-[var(--color-primary)] hover:bg-green-950 focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               Ask
             </button>
@@ -44,9 +44,9 @@ function Home() {
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-start items-center gap-6 w-full">
+        <div className="grid grid-cols-4 gap-10">
           {data.map((x, i) => (
-            <div key={i} className="w-40">
+            <div key={i} className="w-full">
               <img src={x.image} className="w-full rounded-xl" />
               <h4 className="font-semibold mt-4">{x.title}</h4>
               <p className="text-sm text-slate-400">{x.description}</p>

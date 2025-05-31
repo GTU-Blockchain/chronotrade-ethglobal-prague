@@ -265,6 +265,74 @@ function isScheduledTimeValid(uint256 _serviceId, uint256 _scheduledTime) public
     -   `_scheduledTime`: Unix timestamp to validate
 -   Returns: Tuple of (isValid, reason)
 
+```solidity
+function getProfile(address _user) external view returns (
+    address user,
+    string memory name,
+    string memory description,
+    uint256 ratingSum,
+    uint256 ratingCount,
+    bool isRegistered,
+    DayOfWeek[] memory availableDays,
+    TimeSlot[] memory availableTimeSlots,
+    uint8[] memory timeSlotStartHours
+)
+```
+
+-   Gets complete profile data for a user
+-   Parameters:
+    -   `_user`: Address of the user
+-   Returns: User's profile information including ratings, available time slots, and days
+-   Requirements:
+    -   User must be registered
+
+```solidity
+function getService(uint256 _serviceId) external view returns (
+    Service memory service,
+    address seller,
+    string memory sellerName,
+    string memory sellerDescription,
+    uint256 sellerRatingSum,
+    uint256 sellerRatingCount,
+    DayOfWeek[] memory sellerAvailableDays,
+    TimeSlot[] memory sellerAvailableTimeSlots,
+    uint8[] memory sellerTimeSlotStartHours,
+    PurchasedService memory purchase
+)
+```
+
+-   Gets complete service data including seller profile
+-   Parameters:
+    -   `_serviceId`: ID of the service
+-   Returns: Service details, seller profile information, and purchase status
+-   Requirements:
+    -   Service must exist and be active
+
+```solidity
+function getProvidedServices(address _user) external view returns (Service[] memory)
+```
+
+-   Gets all services provided by a user (as seller)
+-   Parameters:
+    -   `_user`: Address of the user
+-   Returns: Array of services created by the user
+-   Requirements:
+    -   User must be registered
+
+```solidity
+function getReceivedServices(address _user) external view returns (
+    Service[] memory,
+    PurchasedService[] memory
+)
+```
+
+-   Gets all services received by a user (as buyer)
+-   Parameters:
+    -   `_user`: Address of the user
+-   Returns: Tuple of (services array, purchases array)
+-   Requirements:
+    -   User must be registered
+
 ## State Variables
 
 -   `timeToken`: TIME token contract instance

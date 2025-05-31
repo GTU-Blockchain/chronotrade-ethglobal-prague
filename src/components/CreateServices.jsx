@@ -1,34 +1,35 @@
 import React, { useState } from "react";
 
 const CreateServices = () => {
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    hours: "",
-    category: "",
-  });
+    const [formData, setFormData] = useState({
+        title: "",
+        description: "",
+        hours: "",
+        category: "",
+    });
 
-  const categories = [
-    "Programming",
-    "Design",
-    "Mentorship",
-    "Oil Marketing",
-    "Oil Writing",
-    "Illustration",
-    "Music",
-    "Video Production",
-  ];
+    const categories = [
+        "Programming",
+        "Design",
+        "Mentorship",
+        "Oil Marketing",
+        "Oil Writing",
+        "Illustration",
+        "Music",
+        "Video Production",
+    ];
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+    };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form submitted:", formData);
-    // Add form submission logic here
-  };
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        console.log("Form submitted:", formData);
+        // Add form submission logic here
+    };
+
 
   return (
     <div className="p-3 w-2xl">
@@ -111,6 +112,7 @@ const CreateServices = () => {
       </form>
     </div>
   );
+
 };
 
 export default CreateServices;

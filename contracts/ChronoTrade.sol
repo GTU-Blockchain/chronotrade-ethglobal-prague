@@ -61,6 +61,15 @@ contract ChronoTrade {
         bool isCancelled;
     }
 
+    struct Comment {
+        uint256 id;
+        uint256 serviceId;
+        address author;
+        string content;
+        uint256 timestamp;
+        uint8 rating; // Rating from 1-5
+    }
+
     // events
     event ServiceCreated(
         uint256 indexed serviceId,
@@ -84,6 +93,12 @@ contract ChronoTrade {
     event WithdrawSuccess(address indexed user, uint256 amount, string reason);
     event UserRegistered(address indexed user);
     event TimeSlotsUpdated(address indexed user);
+    event CommentCreated(
+        uint256 indexed serviceId,
+        address indexed author,
+        uint256 commentId,
+        uint8 rating
+    );
 
     // mappings
     mapping(address => UserProfile) public profiles;
@@ -93,6 +108,9 @@ contract ChronoTrade {
     mapping(address => uint256[]) public userServices;
     mapping(address => uint256[]) public userPurchases;
     mapping(address => mapping(uint256 => bool)) public userBookedSlots; // user => timestamp => isBooked
+    mapping(uint256 => Comment[]) public serviceComments; // serviceId => array of comments
+    mapping(uint256 => uint256) public nextCommentId; // serviceId => next comment ID
+    mapping(uint256 => mapping(address => bool)) public hasCommented; // serviceId => buyer => hasCommented
 
     // state variables
     uint256 public nextServiceId;
@@ -187,13 +205,21 @@ contract ChronoTrade {
         );
 
         // Check if the hour slot is available and valid
-        TimeSlot memory slot = sellerProfile.availableTimeSlots[scheduledHour];
-        require(
-            scheduledHour >= slot.startHour &&
+        bool isTimeSlotValid = false;
+        for (uint i = 0; i < sellerProfile.timeSlotStartHours.length; i++) {
+            TimeSlot memory slot = sellerProfile.availableTimeSlots[
+                sellerProfile.timeSlotStartHours[i]
+            ];
+            if (
+                scheduledHour >= slot.startHour &&
                 scheduledHour < slot.endHour &&
-                scheduledHour + service.durationHours <= slot.endHour,
-            "Time slot not available or invalid"
-        );
+                scheduledHour + service.durationHours <= slot.endHour
+            ) {
+                isTimeSlotValid = true;
+                break;
+            }
+        }
+        require(isTimeSlotValid, "Time slot not available or invalid");
 
         // Check if the slot is already booked
         require(
@@ -552,5 +578,389 @@ contract ChronoTrade {
         address _user
     ) public view returns (uint8[] memory) {
         return profiles[_user].timeSlotStartHours;
+    }
+
+    // Get all services provided by a user (as seller)
+    function getProvidedServices(
+        address _user
+    ) external view returns (Service[] memory) {
+        require(profiles[_user].isRegistered, "User not registered");
+
+        uint256[] memory serviceIds = userServices[_user];
+        Service[] memory providedServices = new Service[](serviceIds.length);
+
+        for (uint i = 0; i < serviceIds.length; i++) {
+            providedServices[i] = services[serviceIds[i]];
+        }
+
+        return providedServices;
+    }
+
+    // Get all services received by a user (as buyer)
+    function getReceivedServices(
+        address _user
+    ) external view returns (Service[] memory, PurchasedService[] memory) {
+        require(profiles[_user].isRegistered, "User not registered");
+
+        uint256[] memory purchaseIds = userPurchases[_user];
+        Service[] memory receivedServices = new Service[](purchaseIds.length);
+        PurchasedService[] memory purchasedServices = new PurchasedService[](
+            purchaseIds.length
+        );
+
+        for (uint i = 0; i < purchaseIds.length; i++) {
+            uint256 serviceId = purchaseIds[i];
+            receivedServices[i] = services[serviceId];
+            purchasedServices[i] = purchases[serviceId];
+        }
+
+        return (receivedServices, purchasedServices);
+    }
+
+    // Get complete profile data for a user
+    function getProfile(
+        address _user
+    )
+        external
+        view
+        returns (
+            address user,
+            string memory name,
+            string memory description,
+            uint256 ratingSum,
+            uint256 ratingCount,
+            bool isRegistered,
+            DayOfWeek[] memory availableDays,
+            TimeSlot[] memory availableTimeSlots,
+            uint8[] memory timeSlotStartHours
+        )
+    {
+        UserProfile storage profile = profiles[_user];
+        require(profile.isRegistered, "User not registered");
+
+        return (
+            profile.user,
+            profile.name,
+            profile.description,
+            profile.ratingSum,
+            profile.ratingCount,
+            profile.isRegistered,
+            getAvailableDays(profile),
+            getAvailableTimeSlots(profile),
+            profile.timeSlotStartHours
+        );
+    }
+
+    // Get complete service data including seller profile
+    function getService(
+        uint256 _serviceId
+    )
+        external
+        view
+        returns (
+            Service memory service,
+            address seller,
+            string memory sellerName,
+            string memory sellerDescription,
+            uint256 sellerRatingSum,
+            uint256 sellerRatingCount,
+            DayOfWeek[] memory sellerAvailableDays,
+            TimeSlot[] memory sellerAvailableTimeSlots,
+            uint8[] memory sellerTimeSlotStartHours,
+            PurchasedService memory purchase
+        )
+    {
+        service = services[_serviceId];
+        require(service.isActive, "Service not found or inactive");
+
+        UserProfile storage sellerProfile = profiles[service.seller];
+
+        return (
+            service,
+            sellerProfile.user,
+            sellerProfile.name,
+            sellerProfile.description,
+            sellerProfile.ratingSum,
+            sellerProfile.ratingCount,
+            getAvailableDays(sellerProfile),
+            getAvailableTimeSlots(sellerProfile),
+            sellerProfile.timeSlotStartHours,
+            purchases[_serviceId]
+        );
+    }
+
+    // Get purchased service data including the original service
+    function getPurchasedService(
+        uint256 _serviceId
+    )
+        external
+        view
+        returns (PurchasedService memory purchase, Service memory service)
+    {
+        purchase = purchases[_serviceId];
+        require(purchase.buyer != address(0), "Purchase not found");
+
+        service = services[_serviceId];
+        return (purchase, service);
+    }
+
+    function createComment(
+        uint256 _serviceId,
+        string memory _content,
+        uint8 _rating
+    ) external {
+        require(profiles[msg.sender].isRegistered, "User not registered");
+        require(services[_serviceId].isActive, "Service not found or inactive");
+        require(_rating >= 1 && _rating <= 5, "Rating must be between 1 and 5");
+        require(
+            msg.sender != services[_serviceId].seller,
+            "Cannot comment on your own service"
+        );
+
+        // Only allow comments from buyers who have purchased the service
+        PurchasedService storage purchase = purchases[_serviceId];
+        require(purchase.buyer == msg.sender, "Only buyers can comment");
+        require(
+            purchase.isApproved,
+            "Service must be completed before commenting"
+        );
+        require(!purchase.isCancelled, "Cannot comment on cancelled service");
+        require(
+            !hasCommented[_serviceId][msg.sender],
+            "Already commented on this service"
+        );
+
+        uint256 commentId = nextCommentId[_serviceId];
+        Comment memory newComment = Comment({
+            id: commentId,
+            serviceId: _serviceId,
+            author: msg.sender,
+            content: _content,
+            timestamp: block.timestamp,
+            rating: _rating
+        });
+
+        serviceComments[_serviceId].push(newComment);
+        nextCommentId[_serviceId]++;
+        hasCommented[_serviceId][msg.sender] = true;
+
+        // Update seller's rating
+        UserProfile storage sellerProfile = profiles[
+            services[_serviceId].seller
+        ];
+        sellerProfile.ratingSum += _rating;
+        sellerProfile.ratingCount++;
+
+        emit CommentCreated(_serviceId, msg.sender, commentId, _rating);
+        emit UserRated(services[_serviceId].seller, _rating);
+    }
+
+    function getComments(
+        uint256 _serviceId
+    ) external view returns (Comment[] memory) {
+        require(services[_serviceId].isActive, "Service not found or inactive");
+        return serviceComments[_serviceId];
+    }
+
+    // Add a helper function to check if a user has commented on a service
+    function hasUserCommented(
+        uint256 _serviceId,
+        address _user
+    ) external view returns (bool) {
+        return hasCommented[_serviceId][_user];
+    }
+
+    function isTimeSlotAvailable(
+        address _user,
+        uint256 _startTime,
+        uint256 _endTime
+    ) public view returns (bool) {
+        require(_startTime < _endTime, "Invalid time range");
+        require(_startTime > block.timestamp, "Start time must be in future");
+
+        // Get all services where the user is either buyer or seller
+        uint256[] memory providedServices = userServices[_user];
+        uint256[] memory receivedServices = userPurchases[_user];
+
+        // Check provided services (as seller)
+        for (uint i = 0; i < providedServices.length; i++) {
+            PurchasedService storage purchase = purchases[providedServices[i]];
+            if (!purchase.isCancelled) {
+                uint256 serviceEndTime = purchase.scheduledTime +
+                    (services[providedServices[i]].durationHours * 1 hours);
+                // Check if the requested time slot overlaps with this service
+                if (
+                    (_startTime >= purchase.scheduledTime &&
+                        _startTime < serviceEndTime) ||
+                    (_endTime > purchase.scheduledTime &&
+                        _endTime <= serviceEndTime) ||
+                    (_startTime <= purchase.scheduledTime &&
+                        _endTime >= serviceEndTime)
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        // Check received services (as buyer)
+        for (uint i = 0; i < receivedServices.length; i++) {
+            PurchasedService storage purchase = purchases[receivedServices[i]];
+            if (!purchase.isCancelled) {
+                uint256 serviceEndTime = purchase.scheduledTime +
+                    (services[receivedServices[i]].durationHours * 1 hours);
+                // Check if the requested time slot overlaps with this service
+                if (
+                    (_startTime >= purchase.scheduledTime &&
+                        _startTime < serviceEndTime) ||
+                    (_endTime > purchase.scheduledTime &&
+                        _endTime <= serviceEndTime) ||
+                    (_startTime <= purchase.scheduledTime &&
+                        _endTime >= serviceEndTime)
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    // Helper function to get all booked time slots for a user
+    function getBookedTimeSlots(
+        address _user,
+        uint256 _startTime,
+        uint256 _endTime
+    ) public view returns (uint256[] memory) {
+        require(_startTime < _endTime, "Invalid time range");
+        require(_startTime > block.timestamp, "Start time must be in future");
+
+        // Count booked slots
+        uint256 bookedCount = 0;
+        uint256[] memory providedServices = userServices[_user];
+        uint256[] memory receivedServices = userPurchases[_user];
+
+        // Count provided services (as seller)
+        for (uint i = 0; i < providedServices.length; i++) {
+            PurchasedService storage purchase = purchases[providedServices[i]];
+            if (
+                !purchase.isCancelled &&
+                purchase.scheduledTime >= _startTime &&
+                purchase.scheduledTime < _endTime
+            ) {
+                bookedCount++;
+            }
+        }
+
+        // Count received services (as buyer)
+        for (uint i = 0; i < receivedServices.length; i++) {
+            PurchasedService storage purchase = purchases[receivedServices[i]];
+            if (
+                !purchase.isCancelled &&
+                purchase.scheduledTime >= _startTime &&
+                purchase.scheduledTime < _endTime
+            ) {
+                bookedCount++;
+            }
+        }
+
+        // Create array of booked slots
+        uint256[] memory bookedTimeSlots = new uint256[](bookedCount);
+        uint256 index = 0;
+
+        // Add provided services (as seller)
+        for (uint i = 0; i < providedServices.length; i++) {
+            PurchasedService storage purchase = purchases[providedServices[i]];
+            if (
+                !purchase.isCancelled &&
+                purchase.scheduledTime >= _startTime &&
+                purchase.scheduledTime < _endTime
+            ) {
+                bookedTimeSlots[index] = purchase.scheduledTime;
+                index++;
+            }
+        }
+
+        // Add received services (as buyer)
+        for (uint i = 0; i < receivedServices.length; i++) {
+            PurchasedService storage purchase = purchases[receivedServices[i]];
+            if (
+                !purchase.isCancelled &&
+                purchase.scheduledTime >= _startTime &&
+                purchase.scheduledTime < _endTime
+            ) {
+                bookedTimeSlots[index] = purchase.scheduledTime;
+                index++;
+            }
+        }
+
+        return bookedTimeSlots;
+    }
+
+    // Get all active services in the system
+    function getAllServices() external view returns (Service[] memory) {
+        // Count active services
+        uint256 activeCount = 0;
+        for (uint256 i = 0; i < nextServiceId; i++) {
+            if (services[i].isActive) {
+                activeCount++;
+            }
+        }
+
+        // Create array of active services
+        Service[] memory activeServices = new Service[](activeCount);
+        uint256 index = 0;
+
+        // Fill the array with active services
+        for (uint256 i = 0; i < nextServiceId; i++) {
+            if (services[i].isActive) {
+                activeServices[index] = services[i];
+                index++;
+            }
+        }
+
+        return activeServices;
+    }
+
+    // Get all services with pagination
+    function getServicesPaginated(
+        uint256 _startIndex,
+        uint256 _pageSize
+    ) external view returns (Service[] memory, uint256 totalCount) {
+        require(_pageSize > 0, "Page size must be greater than 0");
+
+        // Count total active services
+        uint256 totalActive = 0;
+        for (uint256 i = 0; i < nextServiceId; i++) {
+            if (services[i].isActive) {
+                totalActive++;
+            }
+        }
+
+        // Calculate how many services to return
+        uint256 endIndex = _startIndex + _pageSize;
+        if (endIndex > totalActive) {
+            endIndex = totalActive;
+        }
+        if (_startIndex >= totalActive) {
+            return (new Service[](0), totalActive);
+        }
+
+        // Create array for the page
+        Service[] memory pageServices = new Service[](endIndex - _startIndex);
+        uint256 currentIndex = 0;
+        uint256 foundCount = 0;
+
+        // Fill the array with active services
+        for (uint256 i = 0; i < nextServiceId && foundCount < endIndex; i++) {
+            if (services[i].isActive) {
+                if (currentIndex >= _startIndex && currentIndex < endIndex) {
+                    pageServices[foundCount - _startIndex] = services[i];
+                }
+                currentIndex++;
+                foundCount++;
+            }
+        }
+
+        return (pageServices, totalActive);
     }
 }
