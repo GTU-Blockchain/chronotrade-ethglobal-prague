@@ -73,7 +73,7 @@ const ProfileContent = () => {
   return (
     <div className="p-6">
       {/* Wallet Section */}
-      <div className="mb-8 p-4 bg-[var(--color-secondary)] rounded-lg shadow-lg text-black">
+      <div className="mb-10 p-4 bg-[var(--color-secondary)] rounded-lg shadow-lg text-black">
         <h2 className="text-2xl font-semibold mb-2">Wallet Information</h2>
         <p className="text-sm mb-1">
           <span className="font-medium">Address:</span> {walletInfo.address}
@@ -83,10 +83,29 @@ const ProfileContent = () => {
         </p>
       </div>
 
+      {/* Services Section */}
+      <h2 className="text-2xl font-semibold mb-4">Service and Skills</h2>
+      <div className="flex flex-wrap gap-3 mb-14">
+        {services.map((service, index) => (
+          <div
+            key={index}
+            className="bg-[var(--color-secondary)] rounded-full px-4 py-1 flex items-center text-sm"
+          >
+            {service} 
+            <button 
+              onClick={() => handleRemoveService(service)}
+              className="ml-3 text-lg hover:text-[var(--color-primary)] hover:cursor-pointer transition-colors"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+
       {/* Availability Section */}
-      <div className="mb-8 p-4 bg-white rounded-lg shadow-lg">
+      <div className="mb-14">
         <h2 className="text-2xl font-semibold mb-4">Availability</h2>
-        <div className="flex flex-wrap gap-4 mb-5">
+        <div className="flex flex-wrap gap-4 mb-8">
           <input
             type="date"
             value={selectedDay}
@@ -161,23 +180,6 @@ const ProfileContent = () => {
         </div>
       </div>
 
-      <h2 className="text-2xl font-semibold mb-4">Service and Skills</h2>
-      <div className="flex flex-wrap gap-3 mb-14">
-        {services.map((service, index) => (
-          <div
-            key={index}
-            className="bg-[var(--color-secondary)] rounded-full px-4 py-1 flex items-center text-sm"
-          >
-            {service} 
-            <button 
-              onClick={() => handleRemoveService(service)}
-              className="ml-3 text-lg hover:text-[var(--color-primary)] hover:cursor-pointer transition-colors"
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
 
       {showPopup && (
         <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center">
