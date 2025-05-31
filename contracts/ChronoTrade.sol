@@ -34,6 +34,7 @@ contract ChronoTrade {
         address seller;
         string title;
         string description;
+        string category;
         bool isActive;
         uint8 durationHours; // Duration of the service in hours
     }
@@ -124,6 +125,7 @@ contract ChronoTrade {
     function createService(
         string memory _title,
         string memory _description,
+        string memory _category,
         uint8 _durationHours
     ) external {
         require(profiles[msg.sender].isRegistered, "User not registered");
@@ -138,6 +140,7 @@ contract ChronoTrade {
         newService.seller = msg.sender;
         newService.title = _title;
         newService.description = _description;
+        newService.category = _category;
         newService.isActive = true;
         newService.durationHours = _durationHours;
 
@@ -962,5 +965,10 @@ contract ChronoTrade {
         }
 
         return (pageServices, totalActive);
+    }
+
+    // Check if a user is registered
+    function isUserRegistered(address _user) external view returns (bool) {
+        return profiles[_user].isRegistered;
     }
 }
