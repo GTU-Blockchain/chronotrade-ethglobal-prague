@@ -9,6 +9,6 @@ export const config = createConfig({
     },
 });
 
-const timeTokenAddress = "0x550169D05dCCE151F3642eB2CE2069fe2cD1D03B";
+export const timeTokenAddress = "0xEe3849bB6C0EB5bEb5149dd3b46d886278054CB9";
 
-const chronoTradeAddress = "0x57Ec6f741D36EB5285cB90Aa246fe14073386221";
+export const chronoTradeAddress = "0x62aF0eDE45BcdCF256809Ab398A5a5c6B6Fefd15";

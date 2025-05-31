@@ -895,4 +895,72 @@ contract ChronoTrade {
 
         return bookedTimeSlots;
     }
+
+    // Get all active services in the system
+    function getAllServices() external view returns (Service[] memory) {
+        // Count active services
+        uint256 activeCount = 0;
+        for (uint256 i = 0; i < nextServiceId; i++) {
+            if (services[i].isActive) {
+                activeCount++;
+            }
+        }
+
+        // Create array of active services
+        Service[] memory activeServices = new Service[](activeCount);
+        uint256 index = 0;
+
+        // Fill the array with active services
+        for (uint256 i = 0; i < nextServiceId; i++) {
+            if (services[i].isActive) {
+                activeServices[index] = services[i];
+                index++;
+            }
+        }
+
+        return activeServices;
+    }
+
+    // Get all services with pagination
+    function getServicesPaginated(
+        uint256 _startIndex,
+        uint256 _pageSize
+    ) external view returns (Service[] memory, uint256 totalCount) {
+        require(_pageSize > 0, "Page size must be greater than 0");
+
+        // Count total active services
+        uint256 totalActive = 0;
+        for (uint256 i = 0; i < nextServiceId; i++) {
+            if (services[i].isActive) {
+                totalActive++;
+            }
+        }
+
+        // Calculate how many services to return
+        uint256 endIndex = _startIndex + _pageSize;
+        if (endIndex > totalActive) {
+            endIndex = totalActive;
+        }
+        if (_startIndex >= totalActive) {
+            return (new Service[](0), totalActive);
+        }
+
+        // Create array for the page
+        Service[] memory pageServices = new Service[](endIndex - _startIndex);
+        uint256 currentIndex = 0;
+        uint256 foundCount = 0;
+
+        // Fill the array with active services
+        for (uint256 i = 0; i < nextServiceId && foundCount < endIndex; i++) {
+            if (services[i].isActive) {
+                if (currentIndex >= _startIndex && currentIndex < endIndex) {
+                    pageServices[foundCount - _startIndex] = services[i];
+                }
+                currentIndex++;
+                foundCount++;
+            }
+        }
+
+        return (pageServices, totalActive);
+    }
 }

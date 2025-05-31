@@ -1,6 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import { privateKeyToAccount } from "viem/accounts";
-import { timeTknAddress } from "../../src/config.js";
+import { timeTokenAddress } from "../../src/config.js";
 
 export default buildModule("ChronoTrade", (m) => {
     if (!process.env.PRIVATE_KEY) {
@@ -11,15 +11,15 @@ export default buildModule("ChronoTrade", (m) => {
     const account = privateKeyToAccount(`0x${process.env.PRIVATE_KEY}`);
 
     // Get the TIME token address from the deployment or use the provided one
-    const timeTokenAddress = m.getParameter("timeTokenAddress", timeTknAddress);
+    const timeTknAddress = m.getParameter("timeTokenAddress", timeTokenAddress);
 
     // Deploy ChronoTrade contract with TIME token address
-    const chronoTrade = m.contract("ChronoTrade", [timeTokenAddress], {
+    const chronoTrade = m.contract("ChronoTrade", [timeTknAddress], {
         from: account.address,
     });
 
     // Get the TIME token contract instance
-    const timeToken = m.contractAt("TIME", timeTokenAddress);
+    const timeToken = m.contractAt("TIME", timeTknAddress);
 
     // Update TIME token with ChronoTrade address
     m.call(timeToken, "setChronoTradeContract", [chronoTrade], {
