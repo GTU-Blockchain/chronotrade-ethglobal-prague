@@ -24,13 +24,23 @@ function MyServices() {
             try {
                 setIsLoading(true);
                 setError(null);
-                const services = await readContract(config, {
-                    address: chronoTradeAddress,
-                    abi: chronoTradeAbi,
-                    functionName: "getReceivedServices",
-                    args: [address],
-                });
-                setReceivedServices(services);
+                const [services, purchasedServices] = await readContract(
+                    config,
+                    {
+                        address: chronoTradeAddress,
+                        abi: chronoTradeAbi,
+                        functionName: "getReceivedServices",
+                        args: [address],
+                    }
+                );
+
+                // Combine service and purchase data
+                const combinedServices = services.map((service, index) => ({
+                    ...service,
+                    ...purchasedServices[index],
+                }));
+
+                setReceivedServices(combinedServices);
                 setIsRegistered(true);
             } catch (err) {
                 console.error("Error fetching services:", err);
@@ -62,12 +72,18 @@ function MyServices() {
         return date.toLocaleString();
     };
 
-    // Filter services based on their active status
-    const completedServices = receivedServices.filter(
-        (service) => !service.isActive // Completed services are not active
+    // Filter services based on their active status and ensure they are valid
+    const validServices = receivedServices.filter(
+        (service) =>
+            service && typeof service === "object" && service.id !== undefined
     );
-    const upcomingServices = receivedServices.filter(
-        (service) => service.isActive // Upcoming services are active
+
+    const completedServices = validServices.filter(
+        (service) => service && service.isCompleted
+    );
+
+    const upcomingServices = validServices.filter(
+        (service) => service && !service.isCompleted
     );
 
     if (!address) {
@@ -131,38 +147,45 @@ function MyServices() {
             <section className="flex flex-col w-full dark:bg-[var(--color-background-dark)] bg-white min-h-screen pt-16 items-center justify-start">
                 <div className="flex flex-col w-full max-w-5xl dark:text-white text-black mt-10 transition-all duration-200">
                     <h2 className="font-bold text-2xl mb-4">
-                        Services Complete
+                        Completed Services
                     </h2>
                     {isLoading ? (
                         <div className="flex justify-center items-center py-8">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]"></div>
                         </div>
                     ) : completedServices.length === 0 ? (
-                        <p className="text-gray-500 dark:text-gray-400">
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                             No completed services yet
-                        </p>
+                        </div>
                     ) : (
                         completedServices.map((service) => (
                             <div
-                                key={service.id.toString()}
+                                key={
+                                    service?.id
+                                        ? service.id.toString()
+                                        : Math.random()
+                                }
                                 className="flex items-center w-full hover:bg-[var(--color-hover)] p-4 rounded-2xl"
                             >
                                 <div className="w-20 h-20 rounded-full bg-[var(--color-secondary)] flex items-center justify-center mr-5">
                                     <span className="text-lg font-semibold">
                                         {service.seller
-                                            .slice(0, 2)
-                                            .toUpperCase()}
+                                            ?.slice(0, 2)
+                                            ?.toUpperCase() || "NA"}
                                     </span>
                                 </div>
                                 <div className="flex flex-col justify-center">
                                     <p className="font-semibold">
-                                        {service.title}
+                                        {service.title || "Untitled Service"}
                                     </p>
                                     <p className="dark:text-white/70 text-black/50">
-                                        {formatDate(service.purchaseTime)}
+                                        {service.purchaseTime
+                                            ? formatDate(service.purchaseTime)
+                                            : "No date"}
                                     </p>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        Duration: {service.durationHours} hours
+                                        Duration: {service.durationHours || 0}{" "}
+                                        hours
                                     </p>
                                 </div>
                                 <Link
@@ -193,31 +216,38 @@ function MyServices() {
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]"></div>
                         </div>
                     ) : upcomingServices.length === 0 ? (
-                        <p className="text-gray-500 dark:text-gray-400">
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                             No upcoming services
-                        </p>
+                        </div>
                     ) : (
                         upcomingServices.map((service) => (
                             <div
-                                key={service.id.toString()}
+                                key={
+                                    service?.id
+                                        ? service.id.toString()
+                                        : Math.random()
+                                }
                                 className="flex items-center w-full hover:bg-[var(--color-hover)] p-4 rounded-2xl"
                             >
                                 <div className="w-20 h-20 rounded-full bg-[var(--color-secondary)] flex items-center justify-center mr-5">
                                     <span className="text-lg font-semibold">
                                         {service.seller
-                                            .slice(0, 2)
-                                            .toUpperCase()}
+                                            ?.slice(0, 2)
+                                            ?.toUpperCase() || "NA"}
                                     </span>
                                 </div>
                                 <div className="flex flex-col justify-center">
                                     <p className="font-semibold">
-                                        {service.title}
+                                        {service.title || "Untitled Service"}
                                     </p>
                                     <p className="dark:text-white/70 text-black/50">
-                                        {formatDate(service.purchaseTime)}
+                                        {service.purchaseTime
+                                            ? formatDate(service.purchaseTime)
+                                            : "No date"}
                                     </p>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        Duration: {service.durationHours} hours
+                                        Duration: {service.durationHours || 0}{" "}
+                                        hours
                                     </p>
                                 </div>
                             </div>
