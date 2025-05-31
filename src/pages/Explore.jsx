@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { readContract } from "wagmi/actions";
-import { config, chronoTradeAddress, chronoTradeAbi } from "../config";
-import { useAccount } from "wagmi";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+
 
 function Explore() {
     const [selectedCategory, setSelectedCategory] = useState("All");
@@ -179,8 +178,14 @@ function Explore() {
                                         : "Trade"}
                                 </button>
                             </div>
-                        ))
-                    )}
+                            <button
+                                className="px-6 py-2 bg-[var(--color-secondary)] text-gray-700 rounded-full hover:bg-[var(--color-hover)] hover:cursor-pointer"
+                            >
+                                <Link to="/details">View Details</Link>
+                            </button>
+                        </div>
+                    ))}
+
                 </div>
             </section>
         </div>
