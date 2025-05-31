@@ -33,7 +33,7 @@ const CreateServices = () => {
   return (
     <div className="p-3 w-2xl">
       <h1 className="text-3xl font-bold mb-3">List a new service</h1>
-      <p className="text-sm text-gray-600 mb-6">
+      <p className="text-sm text-gray-500 mb-6">
         You can list any skill you have, or offer to help with anything. Be
         creative!
       </p>

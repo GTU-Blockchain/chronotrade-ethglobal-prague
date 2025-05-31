@@ -183,7 +183,7 @@ const ProfileContent = () => {
 
       {showPopup && (
         <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl shadow-xl">
+          <div className="bg-white p-6 rounded-xl shadow-xl text-black dark:bg-[var(--color-background-dark)] dark:text-white">
             <h3 className="text-xl font-semibold mb-4">Remove Skill</h3>
             <p className="mb-4">Are you sure you want to remove "{selectedService}" from your skills?</p>
             <div className="flex justify-end gap-4">
@@ -216,7 +216,7 @@ const ProfileContent = () => {
               />
               <div>
                 <h4 className="font-semibold">{review.reviewer}</h4>
-                <p className="text-gray-700 text-sm">{review.date}</p>
+                <p className="text-gray-500 text-sm">{review.date}</p>
               </div>
             </div>
             <p className="text-[var(--color-primary)] text-lg mb-1">{review.stars}</p>
