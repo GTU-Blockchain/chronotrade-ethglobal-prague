@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { readContract } from "wagmi/actions";
 import { useAccount } from "wagmi";
+import { useNavigate } from "react-router-dom";
 import { config, chronoTradeAddress, chronoTradeAbi } from "../config";
 import Navbar from "../components/Navbar";
 
 function Explore() {
     const { address, isConnected } = useAccount();
+    const navigate = useNavigate();
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [searchQuery, setSearchQuery] = useState("");
     const [services, setServices] = useState([]);
@@ -193,7 +195,7 @@ function Explore() {
                                                     );
                                                     return;
                                                 }
-                                                // TODO: Implement trade functionality
+                                                navigate(`/service/${service.id}`);
                                             }}
                                         >
                                             Trade
