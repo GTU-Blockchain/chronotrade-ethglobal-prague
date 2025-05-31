@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useReadContract } from "wagmi";
+import { useReadContract, useWriteContract } from "wagmi";
 import { useAccount } from "wagmi";
 import { chronoTradeAddress, chronoTradeAbi } from "../config";
 import Navbar from "../components/Navbar";
@@ -22,6 +22,9 @@ function Details() {
     enabled: !!id
   });
 
+  // Write contract hook for buyService
+  const { writeContract, isPending, isError, error: writeError } = useWriteContract();
+
   // Log the raw service data
   useEffect(() => {
     console.log("Raw Service Data:", serviceData);
@@ -34,6 +37,28 @@ function Details() {
       console.log("Seller Rating Count:", serviceData[5]);
     }
   }, [serviceData]);
+
+  const handleBuyService = async () => {
+    if (!isConnected) {
+      setError("Please connect your wallet to trade");
+      return;
+    }
+
+    try {
+      // Get current timestamp and add 1 hour for scheduling
+      const scheduledTime = Math.floor(Date.now() / 1000) + 3600; // Current time + 1 hour
+
+      await writeContract({
+        address: chronoTradeAddress,
+        abi: chronoTradeAbi,
+        functionName: "buyService",
+        args: [parseInt(id), BigInt(scheduledTime)],
+      });
+    } catch (err) {
+      console.error("Error buying service:", err);
+      setError(err.message);
+    }
+  };
 
   if (isServiceLoading) {
     return (
@@ -120,17 +145,19 @@ function Details() {
               {service.category || 'Uncategorized'}
             </span>
           </div>
+
+          {error && (
+            <div className="mb-4 text-red-500 text-sm">
+              {error}
+            </div>
+          )}
+
           <button 
-            className="w-full md:w-auto px-8 py-3 bg-[var(--color-primary)] hover:bg-[var(--color-hover)] text-white rounded-full font-semibold text-lg transition-colors duration-200"
-            onClick={() => {
-              if (!isConnected) {
-                alert("Please connect your wallet to trade");
-                return;
-              }
-              // TODO: Implement trade functionality
-            }}
+            className="w-full md:w-auto px-8 py-3 bg-[var(--color-primary)] hover:bg-[var(--color-hover)] text-white rounded-full font-semibold text-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleBuyService}
+            disabled={!isConnected || isPending}
           >
-            Trade
+            {isPending ? "Processing..." : "Trade"}
           </button>
         </div>
       </div>

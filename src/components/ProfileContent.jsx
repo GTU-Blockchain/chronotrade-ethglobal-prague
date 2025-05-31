@@ -33,16 +33,6 @@ const ProfileContent = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const [services, setServices] = useState([
-        "Programming",
-        "Design",
-        "Mentorship",
-        "Marketing",
-        "Writing",
-        "Illustration",
-        "Music",
-    ]);
-
     const [showPopup, setShowPopup] = useState(false);
     const [selectedService, setSelectedService] = useState(null);
     const [isUpdatingSlots, setIsUpdatingSlots] = useState(false);
@@ -66,6 +56,12 @@ const ProfileContent = () => {
     const [totalReviews, setTotalReviews] = useState(0);
 
     const [txHash, setTxHash] = useState(null);
+
+    const [providedServices, setProvidedServices] = useState([]);
+    const [isLoadingServices, setIsLoadingServices] = useState(true);
+    const [serviceError, setServiceError] = useState(null);
+    const [cancelTxHash, setCancelTxHash] = useState(null);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     // Fetch wallet information when address changes
     useEffect(() => {
@@ -206,7 +202,10 @@ const ProfileContent = () => {
                     setTotalReviews(total);
                 } catch (err) {
                     console.error("Error fetching reviews:", err);
-                    setReviewError("Failed to load reviews");
+                    // Only set error for actual errors, not for empty reviews
+                    if (!err.message?.includes("no reviews")) {
+                        setReviewError("Failed to load reviews");
+                    }
                 } finally {
                     setIsLoadingReviews(false);
                 }
@@ -214,6 +213,44 @@ const ProfileContent = () => {
         };
 
         fetchUserReviews();
+    }, [address, isConnected]);
+
+    // Fetch user's provided services
+    useEffect(() => {
+        const fetchProvidedServices = async () => {
+            if (address && isConnected) {
+                try {
+                    setIsLoadingServices(true);
+                    setServiceError(null);
+
+                    const services = await readContract(config, {
+                        address: chronoTradeAddress,
+                        abi: chronoTradeAbi,
+                        functionName: "getProvidedServices",
+                        args: [address],
+                    });
+
+                    // Filter services to only show active ones where the current user is the provider
+                    const userServices = services.filter(
+                        (service) =>
+                            service.seller.toLowerCase() ===
+                                address.toLowerCase() && service.isActive
+                    );
+
+                    setProvidedServices(userServices);
+                } catch (err) {
+                    console.error("Error fetching provided services:", err);
+                    // Only set error for actual errors, not for empty services
+                    if (!err.message?.includes("no services")) {
+                        setServiceError("Failed to load services");
+                    }
+                } finally {
+                    setIsLoadingServices(false);
+                }
+            }
+        };
+
+        fetchProvidedServices();
     }, [address, isConnected]);
 
     // Helper function to convert time string to hour (0-23)
@@ -353,34 +390,50 @@ const ProfileContent = () => {
         }
     };
 
-    const handleRemoveService = (service) => {
-        setSelectedService(service);
-        setShowPopup(true);
-    };
+    const handleCancelService = async (serviceId) => {
+        try {
+            setIsCancelling(true);
+            setServiceError(null);
+            setCancelTxHash(null);
 
-    const confirmRemove = () => {
-        setServices(services.filter((s) => s !== selectedService));
-        setShowPopup(false);
-        setSelectedService(null);
-    };
+            // First check if the user is the provider of this service
+            const service = providedServices.find(
+                (s) => s.id.toString() == serviceId.toString()
+            );
+            if (!service) {
+                throw new Error("Service not found");
+            }
 
-    const cancelRemove = () => {
-        setShowPopup(false);
-        setSelectedService(null);
-    };
+            if (service.seller.toLowerCase() != address.toLowerCase()) {
+                throw new Error(
+                    "You can only cancel services that you provide"
+                );
+            }
 
-    // Helper function to format timestamp
-    const formatDate = (timestamp) => {
-        return new Date(Number(timestamp) * 1000).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
-    };
+            const result = await writeContract(config, {
+                address: chronoTradeAddress,
+                abi: chronoTradeAbi,
+                functionName: "cancelService",
+                args: [service.id, "Cancelled by service provider"],
+            });
 
-    // Helper function to generate star rating display
-    const generateStars = (rating) => {
-        return "★".repeat(rating) + "☆".repeat(5 - rating);
+            setCancelTxHash(result);
+            await waitForTransactionReceipt(config, {
+                hash: result,
+            });
+
+            // Update the services list after cancellation
+            setProvidedServices((prevServices) =>
+                prevServices.filter(
+                    (service) => service.id.toString() !== serviceId.toString()
+                )
+            );
+        } catch (err) {
+            console.error("Error cancelling service:", err);
+            setServiceError(err.message || "Failed to cancel service");
+        } finally {
+            setIsCancelling(false);
+        }
     };
 
     return (
@@ -422,22 +475,75 @@ const ProfileContent = () => {
             <h2 className="text-2xl font-semibold mb-4 text-black dark:text-white">
                 Service and Skills
             </h2>
-            <div className="flex flex-wrap gap-3 mb-14">
-                {services.map((service, index) => (
-                    <div
-                        key={index}
-                        className="bg-[var(--color-primary)] text-white rounded-full px-4 py-1 flex items-center text-sm border border-[var(--color-primary)]"
+            {serviceError && providedServices.length > 0 && (
+                <div className="mb-4 p-4 text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-200 rounded-lg">
+                    {serviceError}
+                </div>
+            )}
+            {cancelTxHash && (
+                <div className="mb-4 p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 rounded-lg">
+                    <p className="mb-2">Service cancellation submitted!</p>
+                    <button
+                        onClick={() => openInBlockscout(cancelTxHash)}
+                        className="text-sm underline hover:text-blue-800 dark:hover:text-blue-100 transition-colors cursor-pointer"
                     >
-                        {service}
-                        <button
-                            onClick={() => handleRemoveService(service)}
-                            className="ml-3 text-lg hover:text-gray-200 hover:cursor-pointer transition-colors text-white"
+                        View on Blockscout
+                    </button>
+                </div>
+            )}
+            {isLoadingServices ? (
+                <div className="flex items-center justify-center p-4 text-gray-900 dark:text-white">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)] mr-2"></div>
+                    <span>Loading services...</span>
+                </div>
+            ) : providedServices.length === 0 ? (
+                <div className="p-6 my-5 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
+                    <p className="text-gray-600 dark:text-gray-400 mb-2">
+                        You haven't created any services yet.
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-500">
+                        Create a service to start offering your time and skills
+                        to others.
+                    </p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-14">
+                    {providedServices.map((service) => (
+                        <div
+                            key={service.id.toString()}
+                            className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-xl transition-shadow duration-300"
                         >
-                            ×
-                        </button>
-                    </div>
-                ))}
-            </div>
+                            {service.seller.toLowerCase() ==
+                                address.toLowerCase() && (
+                                <button
+                                    onClick={() =>
+                                        handleCancelService(service.id)
+                                    }
+                                    disabled={isCancelling}
+                                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Cancel Service"
+                                >
+                                    ×
+                                </button>
+                            )}
+                            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white pr-8">
+                                {service.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
+                                {service.description}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="px-2 py-1 bg-[var(--color-primary)] text-white text-xs rounded-full">
+                                    {service.category}
+                                </span>
+                                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">
+                                    {service.durationHours} hours
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Availability Section */}
             <div className="mb-14">
@@ -574,34 +680,6 @@ const ProfileContent = () => {
                 )}
             </div>
 
-            {showPopup && (
-                <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center bg-black/50">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700">
-                        <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                            Remove Skill
-                        </h3>
-                        <p className="mb-4 text-gray-900 dark:text-white">
-                            Are you sure you want to remove "{selectedService}"
-                            from your skills?
-                        </p>
-                        <div className="flex justify-end gap-4">
-                            <button
-                                onClick={cancelRemove}
-                                className="px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={confirmRemove}
-                                className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
-                            >
-                                Remove
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
                 User Comments and Reviews
             </h2>
@@ -611,13 +689,18 @@ const ProfileContent = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]"></div>
                     <span className="ml-2">Loading reviews...</span>
                 </div>
-            ) : reviewError ? (
+            ) : reviewError && reviews.length > 0 ? (
                 <div className="text-red-600 dark:text-red-400 p-4">
                     {reviewError}
                 </div>
             ) : reviews.length === 0 ? (
-                <div className="text-gray-500 dark:text-gray-400 p-4">
-                    No reviews yet
+                <div className="p-6 my-5 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
+                    <p className="text-gray-600 dark:text-gray-400 mb-2">
+                        No reviews yet
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-500">
+                        Reviews will appear here once users rate your services.
+                    </p>
                 </div>
             ) : (
                 <div className="space-y-6">
@@ -651,35 +734,37 @@ const ProfileContent = () => {
                 </div>
             )}
 
-            {/* Rating Overview */}
-            <div className="mt-10 mb-10">
-                <div className="flex items-center gap-2 text-4xl font-bold text-gray-900 dark:text-white">
-                    {averageRating.toFixed(1)}
-                    <span className="text-2xl font-normal text-[var(--color-primary)]">
-                        {generateStars(Math.round(averageRating))}
-                    </span>
-                </div>
-                <div className="text-gray-500 dark:text-gray-400 text-md mb-3">
-                    {totalReviews} reviews
-                </div>
-
-                {ratingStats.map((r) => (
-                    <div key={r.star} className="flex items-center mb-2">
-                        <span className="w-5 text-gray-900 dark:text-white">
-                            {r.star}
-                        </span>
-                        <div className="bg-gray-200 dark:bg-gray-700 rounded h-2 w-80 mx-2 overflow-hidden">
-                            <div
-                                className="bg-[var(--color-primary)] h-2"
-                                style={{ width: `${r.percent}%` }}
-                            />
-                        </div>
-                        <span className="text-gray-500 dark:text-gray-400 text-md mx-2">
-                            {r.percent}%
+            {/* Rating Overview - Only show if there are reviews */}
+            {reviews.length > 0 && (
+                <div className="mt-10 mb-10">
+                    <div className="flex items-center gap-2 text-4xl font-bold text-gray-900 dark:text-white">
+                        {averageRating.toFixed(1)}
+                        <span className="text-2xl font-normal text-[var(--color-primary)]">
+                            {generateStars(Math.round(averageRating))}
                         </span>
                     </div>
-                ))}
-            </div>
+                    <div className="text-gray-500 dark:text-gray-400 text-md mb-3">
+                        {totalReviews} reviews
+                    </div>
+
+                    {ratingStats.map((r) => (
+                        <div key={r.star} className="flex items-center mb-2">
+                            <span className="w-5 text-gray-900 dark:text-white">
+                                {r.star}
+                            </span>
+                            <div className="bg-gray-200 dark:bg-gray-700 rounded h-2 w-80 mx-2 overflow-hidden">
+                                <div
+                                    className="bg-[var(--color-primary)] h-2"
+                                    style={{ width: `${r.percent}%` }}
+                                />
+                            </div>
+                            <span className="text-gray-500 dark:text-gray-400 text-md mx-2">
+                                {r.percent}%
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

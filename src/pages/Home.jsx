@@ -25,20 +25,22 @@ function Home() {
                 setIsLoading(true);
                 setError(null);
 
-                // Fetch all active services
+                // Fetch all services
                 const allServicesData = await readContract(config, {
                     address: chronoTradeAddress,
                     abi: chronoTradeAbi,
                     functionName: "getAllServices",
                 });
 
-                setAllServices(allServicesData);
+                // Filter out inactive services
+                const activeServices = allServicesData.filter(
+                    (service) => service.isActive
+                );
+                setAllServices(activeServices);
 
-                // Get unique seller addresses
+                // Get unique seller addresses from active services
                 const uniqueSellers = [
-                    ...new Set(
-                        allServicesData.map((service) => service.seller)
-                    ),
+                    ...new Set(activeServices.map((service) => service.seller)),
                 ];
 
                 // Fetch profiles for all unique sellers
@@ -63,7 +65,7 @@ function Home() {
 
                 // Fetch service details
                 const details = {};
-                for (const service of allServicesData) {
+                for (const service of activeServices) {
                     try {
                         const comments = await readContract(config, {
                             address: chronoTradeAddress,
@@ -268,10 +270,12 @@ function Home() {
                                 transition: "background-position 0.5s",
                             }}
                             onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundPosition = "right")
+                                (e.currentTarget.style.backgroundPosition =
+                                    "right")
                             }
                             onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundPosition = "left")
+                                (e.currentTarget.style.backgroundPosition =
+                                    "left")
                             }
                         >
                             Ask
