@@ -40,7 +40,7 @@ function App() {
                     }
                 />
                 <Route path="/explore" element={<Explore />} />
-                <Route path="/details" element={<Details />} />
+                <Route path="/service/:id" element={<Details />} />
                 <Route
                     path="/chat"
                     element={
