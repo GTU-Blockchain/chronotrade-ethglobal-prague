@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { readContract } from "wagmi/actions";
 import { config, chronoTradeAddress, chronoTradeAbi } from "../config";
@@ -15,6 +15,13 @@ function Profile() {
     const [isLoading, setIsLoading] = useState(true);
     const [isRegistered, setIsRegistered] = useState(false);
     const { address } = useAccount();
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.state?.showCreateService) {
+            setSelectedPage("CreateService");
+        }
+    }, [location.state]);
 
     useEffect(() => {
         const fetchprofileName = async () => {
