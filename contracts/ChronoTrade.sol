@@ -604,17 +604,17 @@ contract ChronoTrade {
 
         uint256[] memory purchaseIds = userPurchases[_user];
         Service[] memory receivedServices = new Service[](purchaseIds.length);
-        PurchasedService[] memory purchases = new PurchasedService[](
+        PurchasedService[] memory purchasedServices = new PurchasedService[](
             purchaseIds.length
         );
 
         for (uint i = 0; i < purchaseIds.length; i++) {
             uint256 serviceId = purchaseIds[i];
             receivedServices[i] = services[serviceId];
-            purchases[i] = purchases[serviceId];
+            purchasedServices[i] = purchases[serviceId];
         }
 
-        return (receivedServices, purchases);
+        return (receivedServices, purchasedServices);
     }
 
     // Get complete profile data for a user
@@ -864,7 +864,7 @@ contract ChronoTrade {
         }
 
         // Create array of booked slots
-        uint256[] memory bookedSlots = new uint256[](bookedCount);
+        uint256[] memory bookedTimeSlots = new uint256[](bookedCount);
         uint256 index = 0;
 
         // Add provided services (as seller)
@@ -875,7 +875,7 @@ contract ChronoTrade {
                 purchase.scheduledTime >= _startTime &&
                 purchase.scheduledTime < _endTime
             ) {
-                bookedSlots[index] = purchase.scheduledTime;
+                bookedTimeSlots[index] = purchase.scheduledTime;
                 index++;
             }
         }
@@ -888,11 +888,11 @@ contract ChronoTrade {
                 purchase.scheduledTime >= _startTime &&
                 purchase.scheduledTime < _endTime
             ) {
-                bookedSlots[index] = purchase.scheduledTime;
+                bookedTimeSlots[index] = purchase.scheduledTime;
                 index++;
             }
         }
 
-        return bookedSlots;
+        return bookedTimeSlots;
     }
 }
