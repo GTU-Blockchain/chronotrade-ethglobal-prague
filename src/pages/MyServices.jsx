@@ -208,7 +208,7 @@ function MyServices() {
                 </div>
 
                 <div className="flex flex-col w-full max-w-5xl dark:text-white text-black mt-10 space-y-4">
-                    <h3 className="font-semibold text-xl mb-4">
+                    <h3 className="font-bold text-2xl mb-4">
                         Upcoming Services
                     </h3>
                     {isLoading ? (
