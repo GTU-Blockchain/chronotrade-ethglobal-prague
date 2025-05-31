@@ -20,6 +20,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.1",
+    "react-typed": "^2.0.12",
     "tailwindcss": "^4.1.8",
     "viem": "^2.30.5",
     "wagmi": "^2.15.4"
