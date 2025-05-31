@@ -12,6 +12,7 @@ import {
     chronoTradeAddress,
     chronoTradeAbi,
 } from "../config";
+import { openInBlockscout } from "../utils/helpers";
 
 const DAYS_OF_WEEK = [
     { value: 0, label: "Monday" },
@@ -63,6 +64,8 @@ const ProfileContent = () => {
     ]);
     const [averageRating, setAverageRating] = useState(0);
     const [totalReviews, setTotalReviews] = useState(0);
+
+    const [txHash, setTxHash] = useState(null);
 
     // Fetch wallet information when address changes
     useEffect(() => {
@@ -271,6 +274,7 @@ const ProfileContent = () => {
         try {
             setIsUpdatingSlots(true);
             setUpdateError(null);
+            setTxHash(null);
 
             // Create new slots for each selected day
             const newSlots = selectedDays.map((day) => ({
@@ -295,6 +299,7 @@ const ProfileContent = () => {
                 args: [availableDays, timeSlots],
             });
 
+            setTxHash(result);
             await waitForTransactionReceipt(config, {
                 hash: result,
             });
@@ -553,6 +558,18 @@ const ProfileContent = () => {
                                 </li>
                             ))}
                         </ul>
+                    </div>
+                )}
+
+                {txHash && (
+                    <div className="mt-4 p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 rounded-lg">
+                        <p className="mb-2">Time slots update submitted!</p>
+                        <button
+                            onClick={() => openInBlockscout(txHash)}
+                            className="text-sm underline hover:text-blue-800 dark:hover:text-blue-100 transition-colors cursor-pointer"
+                        >
+                            View on Blockscout
+                        </button>
                     </div>
                 )}
             </div>

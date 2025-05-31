@@ -15,6 +15,7 @@ import {
 import { useAccount } from "wagmi";
 import { flowTestnet } from "viem/chains";
 import Navbar from "../components/Navbar";
+import { openInBlockscout } from "../utils/helpers";
 
 function Register() {
     const navigate = useNavigate();
@@ -23,6 +24,7 @@ function Register() {
     const [bio, setBio] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [txHash, setTxHash] = useState(null);
 
     // Redirect to home if wallet is disconnected
     useEffect(() => {
@@ -50,6 +52,7 @@ function Register() {
         try {
             setIsLoading(true);
             setError(null);
+            setTxHash(null);
 
             const result = await writeContract(config, {
                 address: chronoTradeAddress,
@@ -58,7 +61,7 @@ function Register() {
                 args: [name, bio],
             });
 
-            // Wait for transaction to be mined
+            setTxHash(result);
             await waitForTransactionReceipt(config, {
                 hash: result,
             });
@@ -121,6 +124,18 @@ function Register() {
                     {error && (
                         <div className="p-4 text-red-700 bg-red-100 rounded-lg dark:bg-red-900 dark:text-red-200">
                             {error}
+                        </div>
+                    )}
+
+                    {txHash && (
+                        <div className="mb-4 p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 rounded-lg">
+                            <p className="mb-2">Registration submitted!</p>
+                            <button
+                                onClick={() => openInBlockscout(txHash)}
+                                className="text-sm underline hover:text-blue-800 dark:hover:text-blue-100 transition-colors"
+                            >
+                                View on Blockscout
+                            </button>
                         </div>
                     )}
 

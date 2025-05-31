@@ -1,5 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAccount } from "wagmi";
+import { readContract } from "wagmi/actions";
+import { config, chronoTradeAddress, chronoTradeAbi } from "../config";
 import Navbar from "../components/Navbar";
 import ProfileContent from "../components/ProfileContent";
 import Settings from "../components/Settings";
@@ -8,6 +11,37 @@ import CreateService from "../components/CreateServices";
 
 function Profile() {
     const [selectedPage, setSelectedPage] = useState("Profile");
+    const [profileName, setProfileName] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
+    const [isRegistered, setIsRegistered] = useState(false);
+    const { address } = useAccount();
+
+    useEffect(() => {
+        const fetchprofileName = async () => {
+            if (address) {
+                try {
+                    setIsLoading(true);
+                    const profile = await readContract(config, {
+                        address: chronoTradeAddress,
+                        abi: chronoTradeAbi,
+                        functionName: "getProfile",
+                        args: [address],
+                    });
+
+                    setProfileName(profile[1]);
+                    setIsRegistered(profile[5] || false);
+                } catch (error) {
+                    console.error("Error fetching user profile:", error);
+                    setProfileName("guest");
+                    setIsRegistered(false);
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        fetchprofileName();
+    }, [address]);
 
     return (
         <>
@@ -20,12 +54,23 @@ function Profile() {
                         <img
                             className="w-10 h-10 rounded-full border-2 border-[var(--color-secondary)] dark:border-gray-600"
                             src="https://picsum.photos/40?random=4"
-                            alt="User Avatar"
+                            alt={`${profileName?.name || "User"}'s Avatar`}
                         />
                         <div>
                             <p className="font-semibold text-[var(--color-primary)] dark:text-white">
-                                User Name
+                                {isLoading ? (
+                                    <span className="animate-pulse">
+                                        Loading...
+                                    </span>
+                                ) : (
+                                    profileName || "guest"
+                                )}
                             </p>
+                            {isRegistered && (
+                                <p className="text-xs text-[var(--color-primary)] dark:text-gray-400">
+                                    Registered User
+                                </p>
+                            )}
                         </div>
                     </div>
 

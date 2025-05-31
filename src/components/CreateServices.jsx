@@ -7,6 +7,7 @@ import {
 import { useAccount } from "wagmi";
 import { config, chronoTradeAddress, chronoTradeAbi } from "../config";
 import { useNavigate } from "react-router-dom";
+import { openInBlockscout } from "../utils/helpers";
 
 const CreateServices = () => {
     const navigate = useNavigate();
@@ -21,6 +22,7 @@ const CreateServices = () => {
         category: "",
         hours: "",
     });
+    const [txHash, setTxHash] = useState(null);
 
     const categories = [
         "Programming",
@@ -122,6 +124,7 @@ const CreateServices = () => {
             try {
                 setIsLoading(true);
                 setError(null);
+                setTxHash(null);
 
                 const hours = parseInt(formData.hours);
                 if (isNaN(hours) || hours <= 0 || hours > 24) {
@@ -155,6 +158,7 @@ const CreateServices = () => {
                     ],
                 });
 
+                setTxHash(result);
                 await waitForTransactionReceipt(config, {
                     hash: result,
                 });
@@ -223,6 +227,18 @@ const CreateServices = () => {
                     {error && !isCheckingStatus && (
                         <div className="mb-4 p-4 text-red-700 bg-red-100 rounded-lg dark:bg-red-900/30 dark:text-red-200">
                             {error}
+                        </div>
+                    )}
+
+                    {txHash && (
+                        <div className="mb-4 p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 rounded-lg">
+                            <p className="mb-2">Transaction submitted!</p>
+                            <button
+                                onClick={() => openInBlockscout(txHash)}
+                                className="text-sm underline hover:text-blue-800 dark:hover:text-blue-100 transition-colors cursor-pointer"
+                            >
+                                View on Blockscout
+                            </button>
                         </div>
                     )}
 
