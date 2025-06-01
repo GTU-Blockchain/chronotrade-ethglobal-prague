@@ -1,15 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import Home from "./pages/Home";
-import Wallet from "./pages/Wallet";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import MyServices from "./pages/MyServices";
 import Explore from "./pages/Explore";
 import Details from "./pages/Details";
-import Create from "./pages/Create";
 import Chat from "./pages/Chat";
 import Comments from "./pages/Comments";
+import Register from "./pages/Register";
+import ViewProfile from "./pages/ViewProfile";
 
 function App() {
     const { isConnected } = useAccount();
@@ -19,19 +19,23 @@ function App() {
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route
-                    path="/wallet"
-                    element={
-                        isConnected ? <Wallet /> : <Navigate to="/" replace />
-                    }
-                />
-                <Route
                     path="/profile"
                     element={
                         isConnected ? <Profile /> : <Navigate to="/" replace />
                     }
                 />
                 <Route
-                    path="/my-services"
+                    path="/profile/:address"
+                    element={<ViewProfile />}
+                />
+                <Route
+                    path="/register"
+                    element={
+                        isConnected ? <Register /> : <Navigate to="/" replace />
+                    }
+                />
+                <Route
+                    path="/my-services/:address"
                     element={
                         isConnected ? (
                             <MyServices />
@@ -41,8 +45,7 @@ function App() {
                     }
                 />
                 <Route path="/explore" element={<Explore />} />
-                <Route path="/details" element={<Details />} />
-                <Route path="/create" element={<Create />} />
+                <Route path="/service/:id" element={<Details />} />
                 <Route
                     path="/chat"
                     element={
