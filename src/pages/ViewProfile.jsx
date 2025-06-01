@@ -68,7 +68,7 @@ function ViewProfile() {
                         } catch (err) {
                             // Skip inactive services silently
                             console.log(
-                                `Service ${service.id} is inactive or not found`
+                                `Service ${service.id} is inactive or not found, error: ${err}`
                             );
                             continue;
                         }
@@ -219,20 +219,24 @@ function ViewProfile() {
                             Availability
                         </h2>
                         <div className="space-y-3">
-                            {profile[6].map((day, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                                >
-                                    <span className="text-gray-900 dark:text-white">
-                                        {DAYS_OF_WEEK[day].label}
-                                    </span>
-                                    <span className="text-gray-600 dark:text-gray-400">
-                                        {profile[7][index].startHour}:00 -{" "}
-                                        {profile[7][index].endHour}:00
-                                    </span>
-                                </div>
-                            ))}
+                            {profile[6] && profile[7] && profile[6].map((day, index) => {
+                                const timeSlot = profile[7][index];
+                                if (!timeSlot) return null;
+                                
+                                return (
+                                    <div
+                                        key={index}
+                                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                                    >
+                                        <span className="text-gray-900 dark:text-white">
+                                            {DAYS_OF_WEEK[day].label}
+                                        </span>
+                                        <span className="text-gray-600 dark:text-gray-400">
+                                            {timeSlot.startHour}:00 - {timeSlot.endHour}:00
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
