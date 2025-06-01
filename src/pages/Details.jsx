@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useReadContract, useWriteContract } from "wagmi";
 import { useAccount } from "wagmi";
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
-import { addDays, isBefore, isAfter, startOfDay, getDay } from 'date-fns';
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import { addDays, isBefore, isAfter, startOfDay, getDay } from "date-fns";
 import { readContract } from "wagmi/actions";
 import {
     chronoTradeAddress,
@@ -26,6 +26,9 @@ const DAYS_OF_WEEK = [
     { value: 5, label: "Saturday" },
     { value: 6, label: "Sunday" },
 ];
+
+// Add this before the Details component
+const dateAdapter = new AdapterDateFns();
 
 function Details() {
     const { id } = useParams();
@@ -84,10 +87,10 @@ function Details() {
     // Check if a date is available based on seller's schedule
     const isDateAvailable = (date) => {
         if (!sellerAvailability) return false;
-        
+
         const today = startOfDay(new Date());
         const maxDate = addDays(today, 30); // Allow booking up to 30 days in advance
-        
+
         // Check if date is within valid range
         if (isBefore(date, today) || isAfter(date, maxDate)) {
             return false;
@@ -99,7 +102,9 @@ function Details() {
         const ourDayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
         // Check if the day is in seller's available days
-        return sellerAvailability.availableDays.some(day => Number(day) === ourDayOfWeek);
+        return sellerAvailability.availableDays.some(
+            (day) => Number(day) === ourDayOfWeek
+        );
     };
 
     // Get available time slots for the selected date
@@ -108,13 +113,15 @@ function Details() {
 
         const dayOfWeek = getDay(selectedDate);
         const ourDayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-        
+
         console.log("Getting time slots for day:", ourDayOfWeek);
         console.log("Available days:", sellerAvailability.availableDays);
-        
-        const dayIndex = sellerAvailability.availableDays.findIndex(day => Number(day) === ourDayOfWeek);
+
+        const dayIndex = sellerAvailability.availableDays.findIndex(
+            (day) => Number(day) === ourDayOfWeek
+        );
         console.log("Day index:", dayIndex);
-        
+
         if (dayIndex === -1) return null;
 
         return sellerAvailability.timeSlots[dayIndex];
@@ -123,7 +130,7 @@ function Details() {
     // Generate time slots based on the available hours
     const generateTimeSlots = (timeSlot) => {
         if (!timeSlot) return [];
-        
+
         const slots = [];
         const startHour = timeSlot.startHour;
         const endHour = timeSlot.endHour;
@@ -133,7 +140,11 @@ function Details() {
             slots.push({
                 start: hour,
                 end: hour + durationHours,
-                label: `${hour.toString().padStart(2, '0')}:00 - ${(hour + durationHours).toString().padStart(2, '0')}:00`
+                label: `${hour.toString().padStart(2, "0")}:00 - ${(
+                    hour + durationHours
+                )
+                    .toString()
+                    .padStart(2, "0")}:00`,
             });
         }
 
@@ -356,24 +367,28 @@ function Details() {
                                 Seller's Availability
                             </h2>
                             <div className="space-y-3 mb-6">
-                                {sellerAvailability.availableDays.map((day, index) => {
-                                    const timeSlot = sellerAvailability.timeSlots[index];
-                                    if (!timeSlot) return null;
-                                    
-                                    return (
-                                        <div
-                                            key={index}
-                                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                                        >
-                                            <span className="text-gray-900 dark:text-white">
-                                                {DAYS_OF_WEEK[day].label}
-                                            </span>
-                                            <span className="text-gray-600 dark:text-gray-400">
-                                                {timeSlot.startHour}:00 - {timeSlot.endHour}:00
-                                            </span>
-                                        </div>
-                                    );
-                                })}
+                                {sellerAvailability.availableDays.map(
+                                    (day, index) => {
+                                        const timeSlot =
+                                            sellerAvailability.timeSlots[index];
+                                        if (!timeSlot) return null;
+
+                                        return (
+                                            <div
+                                                key={index}
+                                                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                                            >
+                                                <span className="text-gray-900 dark:text-white">
+                                                    {DAYS_OF_WEEK[day].label}
+                                                </span>
+                                                <span className="text-gray-600 dark:text-gray-400">
+                                                    {timeSlot.startHour}:00 -{" "}
+                                                    {timeSlot.endHour}:00
+                                                </span>
+                                            </div>
+                                        );
+                                    }
+                                )}
                             </div>
                         </div>
                     )}
@@ -384,49 +399,83 @@ function Details() {
                             Select Date and Time
                         </h2>
                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
-                            <LocalizationProvider dateAdapter={AdapterDateFns}>
+                            <LocalizationProvider
+                                dateAdapter={AdapterDateFns}
+                                adapterLocale="en"
+                            >
                                 <DateCalendar
                                     value={selectedDate}
                                     onChange={(newDate) => {
                                         setSelectedDate(newDate);
                                         setSelectedTimeSlot(null);
                                     }}
-                                    shouldDisableDate={(date) => !isDateAvailable(date)}
+                                    shouldDisableDate={(date) =>
+                                        !isDateAvailable(date)
+                                    }
                                     sx={{
-                                        '& .MuiPickersDay-root.Mui-selected': {
-                                            backgroundColor: 'var(--color-primary)',
+                                        "& .MuiPickersDay-root.Mui-selected": {
+                                            backgroundColor:
+                                                "var(--color-primary) !important",
                                         },
+                                        "& .MuiPickersDay-root.Mui-selected:hover":
+                                            {
+                                                backgroundColor:
+                                                    "var(--color-hover) !important",
+                                            },
+                                        "& .MuiPickersDay-root.Mui-disabled": {
+                                            color: "rgba(0, 0, 0, 0.38) !important",
+                                        },
+                                        "& .MuiPickersDay-root": {
+                                            color: "inherit",
+                                        },
+                                        "& .MuiPickersCalendarHeader-root": {
+                                            color: "inherit",
+                                        },
+                                        "& .MuiPickersDay-root.Mui-selected.Mui-focusVisible":
+                                            {
+                                                backgroundColor:
+                                                    "var(--color-primary) !important",
+                                            },
                                     }}
                                 />
                             </LocalizationProvider>
-                            
-                            {selectedDate && timeSlots && timeSlots.length > 0 && (
-                                <div className="mt-4">
-                                    <h3 className="text-lg font-medium mb-3 text-gray-900 dark:text-white">
-                                        Available Time Slots
-                                    </h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                        {timeSlots.map((slot, index) => (
-                                            <button
-                                                key={index}
-                                                onClick={() => setSelectedTimeSlot(slot)}
-                                                className={`p-3 rounded-lg border transition-colors duration-200 ${
-                                                    selectedTimeSlot && selectedTimeSlot.start === slot.start
-                                                        ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
-                                                        : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                                }`}
-                                            >
-                                                {slot.label}
-                                            </button>
-                                        ))}
+
+                            {selectedDate &&
+                                timeSlots &&
+                                timeSlots.length > 0 && (
+                                    <div className="mt-4">
+                                        <h3 className="text-lg font-medium mb-3 text-gray-900 dark:text-white">
+                                            Available Time Slots
+                                        </h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                            {timeSlots.map((slot, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={() =>
+                                                        setSelectedTimeSlot(
+                                                            slot
+                                                        )
+                                                    }
+                                                    className={`p-3 rounded-lg border transition-colors duration-200 ${
+                                                        selectedTimeSlot &&
+                                                        selectedTimeSlot.start ===
+                                                            slot.start
+                                                            ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
+                                                            : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                    }`}
+                                                >
+                                                    {slot.label}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                            {selectedDate && (!timeSlots || timeSlots.length === 0) && (
-                                <div className="mt-4 text-gray-600 dark:text-gray-400">
-                                    No available time slots for this date
-                                </div>
-                            )}
+                                )}
+                            {selectedDate &&
+                                (!timeSlots || timeSlots.length === 0) && (
+                                    <div className="mt-4 text-gray-600 dark:text-gray-400">
+                                        No available time slots for this date
+                                    </div>
+                                )}
                         </div>
                     </div>
 
@@ -437,7 +486,12 @@ function Details() {
                     <button
                         className="w-full md:w-auto px-8 py-3 bg-[var(--color-primary)] hover:bg-[var(--color-hover)] text-white rounded-full font-semibold text-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         onClick={handleBuyService}
-                        disabled={!isConnected || isProcessing || !selectedDate || !selectedTimeSlot}
+                        disabled={
+                            !isConnected ||
+                            isProcessing ||
+                            !selectedDate ||
+                            !selectedTimeSlot
+                        }
                     >
                         {isProcessing ? (
                             <>
