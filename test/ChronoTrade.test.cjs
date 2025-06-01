@@ -20,10 +20,12 @@ describe("ChronoTrade", function () {
         // Deploy TIME token
         const TIME = await ethers.getContractFactory("TIME");
         timeToken = await TIME.deploy();
+        await timeToken.waitForDeployment();
 
         // Deploy ChronoTrade
         const ChronoTrade = await ethers.getContractFactory("ChronoTrade");
         chronoTrade = await ChronoTrade.deploy(await timeToken.getAddress());
+        await chronoTrade.waitForDeployment();
 
         // Set ChronoTrade contract address in TIME token
         await timeToken.setChronoTradeContract(await chronoTrade.getAddress());
@@ -125,6 +127,7 @@ describe("ChronoTrade", function () {
             const tx = await chronoTrade.connect(seller).createService(
                 "Test Service",
                 "Service description",
+                "General",
                 2 // 2 hours duration
             );
             const receipt = await tx.wait();
@@ -145,7 +148,12 @@ describe("ChronoTrade", function () {
             await expect(
                 chronoTrade
                     .connect(other)
-                    .createService("Invalid Service", "No time slots", 2)
+                    .createService(
+                        "Invalid Service",
+                        "No time slots",
+                        "Invalid",
+                        2
+                    )
             ).to.be.revertedWith("No available time slots set");
         });
     });
@@ -177,6 +185,7 @@ describe("ChronoTrade", function () {
             const tx2 = await chronoTrade.connect(seller).createService(
                 "Test Service",
                 "Service description",
+                "General",
                 2 // 2 hours duration
             );
             const receipt = await tx2.wait();
@@ -293,7 +302,12 @@ describe("ChronoTrade", function () {
             // Create first service
             const tx2 = await chronoTrade
                 .connect(seller)
-                .createService("Test Service 1", "Service description 1", 2);
+                .createService(
+                    "Test Service 1",
+                    "Service description 1",
+                    "General",
+                    2
+                );
             const receipt = await tx2.wait();
             const event = receipt.logs.find(
                 (log) => log.fragment?.name === "ServiceCreated"
@@ -303,7 +317,12 @@ describe("ChronoTrade", function () {
             // Create second service
             const tx3 = await chronoTrade
                 .connect(seller)
-                .createService("Test Service 2", "Service description 2", 2);
+                .createService(
+                    "Test Service 2",
+                    "Service description 2",
+                    "General",
+                    2
+                );
             const receipt2 = await tx3.wait();
             const event2 = receipt2.logs.find(
                 (log) => log.fragment?.name === "ServiceCreated"
@@ -458,7 +477,12 @@ describe("ChronoTrade", function () {
             // Create a service
             const tx2 = await chronoTrade
                 .connect(seller)
-                .createService("Test Service", "Service description", 2);
+                .createService(
+                    "Test Service",
+                    "Service description",
+                    "General",
+                    2
+                );
             const receipt = await tx2.wait();
             const event = receipt.logs.find(
                 (log) => log.fragment?.name === "ServiceCreated"
@@ -550,6 +574,178 @@ describe("ChronoTrade", function () {
             } else {
                 expect(bookedSlots.length).to.equal(0);
             }
+        });
+    });
+
+    describe("buyService Debug Tests", function () {
+        let scheduledTime;
+
+        beforeEach(async function () {
+            // Set up time slots for seller (9 AM to 5 PM)
+            const availableDays = [0, 1, 2]; // Monday, Tuesday, Wednesday
+            const timeSlots = [{ startHour: 9, endHour: 17 }];
+            await chronoTrade
+                .connect(seller)
+                .updateTimeSlots(availableDays, timeSlots);
+
+            // Create a service with 2 hours duration
+            const tx = await chronoTrade
+                .connect(seller)
+                .createService(
+                    "Debug Service",
+                    "Service for debugging",
+                    "Debug",
+                    2
+                );
+            const receipt = await tx.wait();
+            const event = receipt.logs.find(
+                (log) => log.fragment?.name === "ServiceCreated"
+            );
+            serviceId = event.args.serviceId;
+
+            // Calculate next available day (Monday, Tuesday, or Wednesday)
+            const currentTime = BigInt(await time.latest());
+            const currentDay = Number(
+                await chronoTrade.getDayOfWeek(currentTime)
+            );
+            let daysToAdd = 1n;
+
+            // Find the next available day
+            while (daysToAdd <= 7n) {
+                const nextDay = (currentDay + Number(daysToAdd)) % 7;
+                if (nextDay <= 2) {
+                    break;
+                }
+                daysToAdd++;
+            }
+
+            // Set scheduled time to next available day at 10:00 AM
+            scheduledTime = currentTime + daysToAdd * 86400n;
+            scheduledTime = scheduledTime - (scheduledTime % 86400n) + 36000n;
+        });
+
+        it("Should fail with insufficient token balance", async function () {
+            // Get buyer's current balance
+            const balance = await timeToken.balanceOf(buyer.address);
+            console.log(
+                "Buyer's current balance:",
+                ethers.formatEther(balance),
+                "TIME"
+            );
+
+            // Calculate required amount (2 hours * 1 TIME per hour)
+            const requiredAmount = TOKEN_PER_HOUR * 2n;
+            console.log(
+                "Required amount:",
+                ethers.formatEther(requiredAmount),
+                "TIME"
+            );
+
+            // If buyer has enough tokens, transfer some away to test insufficient balance
+            if (balance >= requiredAmount) {
+                const transferAmount =
+                    balance - requiredAmount + ethers.parseEther("1");
+                await timeToken
+                    .connect(buyer)
+                    .transfer(other.address, transferAmount);
+            }
+
+            // Verify new balance is insufficient
+            const newBalance = await timeToken.balanceOf(buyer.address);
+            console.log(
+                "Buyer's new balance:",
+                ethers.formatEther(newBalance),
+                "TIME"
+            );
+            expect(newBalance).to.be.below(requiredAmount);
+
+            // Attempt to buy service should fail
+            await expect(
+                chronoTrade.connect(buyer).buyService(serviceId, scheduledTime)
+            ).to.be.revertedWith("Not enough TIME tokens");
+        });
+
+        it("Should succeed with sufficient token balance", async function () {
+            // Ensure buyer has enough tokens
+            const requiredAmount = TOKEN_PER_HOUR * 2n;
+            const balance = await timeToken.balanceOf(buyer.address);
+
+            if (balance < requiredAmount) {
+                // Mint additional tokens if needed
+                await timeToken.mintForNewUser(buyer.address);
+            }
+
+            // Verify balance is sufficient
+            const newBalance = await timeToken.balanceOf(buyer.address);
+            console.log(
+                "Buyer's balance before purchase:",
+                ethers.formatEther(newBalance),
+                "TIME"
+            );
+            expect(newBalance).to.be.at.least(requiredAmount);
+
+            // Buy service should succeed
+            await chronoTrade
+                .connect(buyer)
+                .buyService(serviceId, scheduledTime);
+
+            // Verify token transfer
+            const contractBalance = await timeToken.balanceOf(
+                await chronoTrade.getAddress()
+            );
+            expect(contractBalance).to.equal(requiredAmount);
+
+            // Verify purchase details
+            const purchase = await chronoTrade.getPurchasedService(serviceId);
+            expect(purchase.purchase.buyer).to.equal(buyer.address);
+            expect(purchase.purchase.scheduledTime).to.equal(scheduledTime);
+            expect(purchase.purchase.isApproved).to.be.false;
+        });
+
+        it("Should fail when trying to buy own service", async function () {
+            await expect(
+                chronoTrade.connect(seller).buyService(serviceId, scheduledTime)
+            ).to.be.revertedWith("Cannot buy your own service");
+        });
+
+        it("Should fail when service is inactive", async function () {
+            // Deactivate the service
+            await chronoTrade
+                .connect(seller)
+                .cancelService(serviceId, "Cancelling for test");
+
+            await expect(
+                chronoTrade.connect(buyer).buyService(serviceId, scheduledTime)
+            ).to.be.revertedWith("Service inactive");
+        });
+
+        it("Should fail when scheduled time is in the past", async function () {
+            const pastTime = BigInt(await time.latest()) - 3600n; // 1 hour ago
+
+            await expect(
+                chronoTrade.connect(buyer).buyService(serviceId, pastTime)
+            ).to.be.revertedWith("Scheduled time must be in future");
+        });
+
+        it("Should fail when time slot is not available", async function () {
+            // Try to schedule outside seller's available hours (8 AM)
+            const invalidTime = scheduledTime - 7200n; // 2 hours before 10 AM
+
+            await expect(
+                chronoTrade.connect(buyer).buyService(serviceId, invalidTime)
+            ).to.be.revertedWith("Time slot not available or invalid");
+        });
+
+        it("Should fail when time slot is already booked", async function () {
+            // First buyer books the slot
+            await chronoTrade
+                .connect(buyer)
+                .buyService(serviceId, scheduledTime);
+
+            // Second buyer tries to book the same slot
+            await expect(
+                chronoTrade.connect(other).buyService(serviceId, scheduledTime)
+            ).to.be.revertedWith("Time slot already booked");
         });
     });
 });

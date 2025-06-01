@@ -181,10 +181,15 @@ contract ChronoTrade {
         return uint8((_timestamp / 3600) % 24);
     }
 
-    function buyService(uint256 _serviceId, uint256 _scheduledTime) external {
+    function getTotalPrice(uint256 _serviceId) public view returns (uint256) {
         Service memory service = services[_serviceId];
+        return service.durationHours * TOKEN_PER_HOUR * 10 ** 18;
+    }
+
+    function buyService(uint256 _serviceId, uint256 _scheduledTime) external {
+        Service storage service = services[_serviceId];
         UserProfile storage sellerProfile = profiles[service.seller];
-        uint256 totalPrice = service.durationHours * TOKEN_PER_HOUR * 10 ** 18;
+        uint256 totalPrice = getTotalPrice(_serviceId);
 
         require(service.isActive, "Service inactive");
         require(msg.sender != service.seller, "Cannot buy your own service");

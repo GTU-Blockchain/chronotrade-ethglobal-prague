@@ -15,7 +15,7 @@ export const config = createConfig({
     },
 });
 
-export const timeTokenAddress = "0x3C6eBB3798A2F27d2bDf8F86f1cF74D1999019a6";
-export const chronoTradeAddress = "0x701312CA665B725b0a751bAa859Bb218B03a7fd0";
+export const timeTokenAddress = "0xb000c2632f2Ea6DaFB08C44afdfA101A5c540a8e";
+export const chronoTradeAddress = "0x063F7B1d3A64D364734EECF7EBCEAf5BDee91716";
 export const chronoTradeAbi = chronoTradeArtifact.abi;
 export const timeTokenAbi = timeTokenArtifact.abi;

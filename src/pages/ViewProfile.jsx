@@ -57,13 +57,21 @@ function ViewProfile() {
                     // Fetch comments for each service
                     const allComments = [];
                     for (const service of providedServices) {
-                        const comments = await readContract(config, {
-                            address: chronoTradeAddress,
-                            abi: chronoTradeAbi,
-                            functionName: "getComments",
-                            args: [service.id],
-                        });
-                        allComments.push(...comments);
+                        try {
+                            const comments = await readContract(config, {
+                                address: chronoTradeAddress,
+                                abi: chronoTradeAbi,
+                                functionName: "getComments",
+                                args: [service.id],
+                            });
+                            allComments.push(...comments);
+                        } catch (err) {
+                            // Skip inactive services silently
+                            console.log(
+                                `Service ${service.id} is inactive or not found`
+                            );
+                            continue;
+                        }
                     }
 
                     // Sort comments by timestamp (newest first)
@@ -143,7 +151,9 @@ function ViewProfile() {
             <>
                 <Navbar />
                 <div className="flex items-center justify-center min-h-screen bg-[var(--color-background)] dark:bg-[var(--color-background-dark)]">
-                    <div className="text-red-600 dark:text-red-400">{error}</div>
+                    <div className="text-red-600 dark:text-red-400">
+                        {error}
+                    </div>
                 </div>
             </>
         );
@@ -245,7 +255,10 @@ function ViewProfile() {
                             </div>
 
                             {ratingStats.map((r) => (
-                                <div key={r.star} className="flex items-center mb-2">
+                                <div
+                                    key={r.star}
+                                    className="flex items-center mb-2"
+                                >
                                     <span className="w-5 text-gray-900 dark:text-white">
                                         {r.star}
                                     </span>
@@ -271,7 +284,9 @@ function ViewProfile() {
                                 >
                                     <div className="flex items-center mb-2">
                                         <div className="w-10 h-10 bg-[var(--color-primary)] rounded-full mr-4 flex items-center justify-center text-white">
-                                            {review.author.slice(0, 2).toUpperCase()}
+                                            {review.author
+                                                .slice(0, 2)
+                                                .toUpperCase()}
                                         </div>
                                         <div>
                                             <h4 className="font-semibold text-gray-900 dark:text-white">
@@ -299,4 +314,4 @@ function ViewProfile() {
     );
 }
 
-export default ViewProfile; 
+export default ViewProfile;
